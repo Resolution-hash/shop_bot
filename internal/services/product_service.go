@@ -1,0 +1,40 @@
+package services
+
+import (
+	"log"
+	"telegram_bot/internal/repository"
+)
+
+type Card struct {
+	Title       string
+	Description string
+	ImageURL    string
+	TotalCards  int
+	CurrentCard int
+}
+
+type ProductService struct {
+	repo repository.ProductRepo
+}
+
+func NewProductService(repo repository.ProductRepo) *ProductService {
+	return &ProductService{repo: repo}
+}
+
+func (s *ProductService) GetAllProducts() ([]repository.Product, error) {
+	products, err := s.repo.GetAllProducts()
+	if err != nil {
+		log.Println("Error getting all products: ", err)
+		return nil, err
+	}
+	return products, nil
+}
+
+func (s *ProductService) GetProductByType(productType string) ([]repository.Product, error) {
+	products, err := s.repo.GetProductsByType(productType)
+	if err != nil {
+		log.Println("Error getting all products: ", err)
+		return nil, err
+	}
+	return products, nil
+}
