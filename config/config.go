@@ -7,7 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var cfgPath = "C:/Users/Leoni/OneDrive/Документы/projects/shop_bot/config/.env"
+var cfgPath = "C:/Users/Leoni/Documents/projects/shop_bot/config/.env"
 
 type Config struct {
 	TelegramAPIToken string
@@ -18,7 +18,7 @@ func LoadConfig() (*Config, error) {
 
 	err := godotenv.Load(cfgPath)
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal("Error loading .env file, ", err)
 	}
 
 	config := Config{

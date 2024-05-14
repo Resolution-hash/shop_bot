@@ -6,15 +6,17 @@ import (
 	"log"
 
 	"github.com/Resolution-hash/shop_bot/config"
-	"github.com/Resolution-hash/shop_bot/internal/card"
+	// "github.com/Resolution-hash/shop_bot/internal/card"
 	"github.com/Resolution-hash/shop_bot/internal/repository"
 	"github.com/Resolution-hash/shop_bot/internal/services"
+	"github.com/Resolution-hash/shop_bot/internal/sessions"
+	"github.com/fatih/color"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var sessions map[int64]card.CardSession
+var SessionManager = sessions.NewSessionManager()
 
 func StartBot(cfg *config.Config) {
 	bot, err := tgbotapi.NewBotAPI(cfg.TelegramAPIToken)
@@ -27,11 +29,11 @@ func StartBot(cfg *config.Config) {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	updates, err := bot.GetUpdatesChan(u)
+	updates, _ := bot.GetUpdatesChan(u)
 
 	for update := range updates {
 		if update.Message != nil {
-			log.Println("\n\n\n" + update.Message.Text)
+			color.Blue("\n\n\n" + update.Message.Text)
 			handleCommand(bot, update)
 		}
 		if update.CallbackQuery != nil {
@@ -59,30 +61,6 @@ func StartBot(cfg *config.Config) {
 	}
 }
 
-func initCardSession(chatID int64, products []repository.Product, prevStage string) *card.CardSession {
-	if sessions == nil {
-		sessions = make(map[int64]card.CardSession)
-	}
-
-	currentSession, exists := sessions[chatID]
-	if !exists || currentSession.Card == nil {
-		currentSession = card.CardSession{
-			Card:     card.NewCard(products),
-			Keyboard: selectKeyboard("card", prevStage),
-		}
-		sessions[chatID] = currentSession
-	}
-
-	return &currentSession
-
-}
-
-func sessionClose(chatID int64) {
-	if _, ok := sessions[chatID]; !ok {
-		return
-	}
-	delete(sessions, chatID)
-}
 func setupDatabase() (*sql.DB, error) {
 	cfg, err := config.LoadConfig()
 	if err != nil {
@@ -122,10 +100,10 @@ func deleteMessage(bot *tgbotapi.BotAPI, chatID int64, messageID int) {
 	}
 }
 
-func selectKeyboard(value string, back interface{}) tgbotapi.InlineKeyboardMarkup {
+func getKeyboard(value string, back interface{}) tgbotapi.InlineKeyboardMarkup {
 	fmt.Println(value)
 	switch value {
-	case "startKeyboard":
+	case "start":
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("Керамика", "ceramic"),
@@ -167,14 +145,30 @@ func selectKeyboard(value string, back interface{}) tgbotapi.InlineKeyboardMarku
 	}
 }
 
+func getMessageText(step string) string {
+	switch step {
+	case "start":
+		return "Приветствие!"
+	default:
+		return "Такой команды нет. Пожалуйста, выберите из доступных команд"
+	}
+}
+
 func handleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	userInfo := getUserInfo(update)
+
 	switch update.Message.Text {
 	case "/start":
-		keyboard := selectKeyboard("startKeyboard", nil)
-		sendMessage(bot, update.Message.Chat.ID, "Приветствие!", keyboard)
+		keyboard := getKeyboard("start", nil)
+		messageText := getMessageText("start")
+		SessionManager.CreateSession(userInfo, keyboard, "start", "")
+		SessionManager.PrintSessionData()
+		sendMessage(bot, update.Message.Chat.ID, messageText, keyboard)
 	default:
-		keyboard := selectKeyboard("startKeyboard", nil)
-		sendMessage(bot, update.Message.Chat.ID, "Такой команды нет. Пожалуйста, выберите из доступных товаров!", keyboard)
+		keyboard := getKeyboard("start", nil)
+		messageText := getMessageText("")
+		SessionManager.CreateSession(userInfo, keyboard, "errorCommand", "")
+		sendMessage(bot, update.Message.Chat.ID, messageText, keyboard)
 	}
 }
 
@@ -187,7 +181,7 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	switch data {
 	case "ceramic":
 
-		keyboard := selectKeyboard(data, nil)
+		keyboard := getKeyboard(data, nil)
 		sendMessage(bot, chatID, "Выберите категорию: ", keyboard)
 	case "lemons":
 		db, err := setupDatabase()
@@ -202,79 +196,75 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			log.Println(err)
 		}
 		//Если уже существует, закрываем
-		sessionClose(chatID)
 
-		cardSession := initCardSession(chatID, products, "ceramic")
-		messageText := cardSession.Card.GetTextTemplate()
-		sendMessage(bot, chatID, messageText, cardSession.Keyboard)
+		// sendMessage(bot, chatID, messageText, cardSession.Keyboard)
 
 		fmt.Println("\n\n\n\n", products)
 	case "grenades":
-		db, err := setupDatabase()
-		if err != nil {
-			log.Println(err)
-		}
-		service := initServices(db)
+		// db, err := setupDatabase()
+		// if err != nil {
+		// 	log.Println(err)
+		// }
+		// service := initServices(db)
 
-		products, err := service.GetProductByType(data)
-		if err != nil {
-			log.Println(err)
-		}
-		sessionClose(chatID)
+		// products, err := service.GetProductByType(data)
+		// if err != nil {
+		// 	log.Println(err)
+		// }
 
-		cardSession := initCardSession(chatID, products, "ceramic")
-		messageText := cardSession.Card.GetTextTemplate()
-		sendMessage(bot, chatID, messageText, cardSession.Keyboard)
+		// sessionClose(chatID)
+
+		// cardSession := initCardSession(chatID, products, "ceramic")
+		// messageText := cardSession.Card.GetTextTemplate()
+		// sendMessage(bot, chatID, messageText, cardSession.Keyboard)
 	case "drawings":
-		db, err := setupDatabase()
-		if err != nil {
-			log.Println(err)
-		}
-		service := initServices(db)
+		// db, err := setupDatabase()
+		// if err != nil {
+		// 	log.Println(err)
+		// }
+		// service := initServices(db)
 
-		products, err := service.GetProductByType(data)
-		if err != nil {
-			log.Println(err)
-		}
-		sessionClose(chatID)
+		// products, err := service.GetProductByType(data)
+		// if err != nil {
+		// 	log.Println(err)
+		// }
+		// sessionClose(chatID)
 
-		cardSession := initCardSession(chatID, products, "ceramic")
-		messageText := cardSession.Card.GetTextTemplate()
-		sendMessage(bot, chatID, messageText, cardSession.Keyboard)
+		// cardSession := initCardSession(chatID, products, "ceramic")
+		// messageText := cardSession.Card.GetTextTemplate()
+		// sendMessage(bot, chatID, messageText, cardSession.Keyboard)
 	case "showAllItems":
-		db, err := setupDatabase()
-		if err != nil {
-			log.Println(err)
-		}
-		service := initServices(db)
+		// db, err := setupDatabase()
+		// if err != nil {
+		// 	log.Println(err)
+		// }
+		// service := initServices(db)
 
-		products, err := service.GetAllProducts()
-		if err != nil {
-			log.Fatal(err)
-		}
+		// products, err := service.GetAllProducts()
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
 
-		//Если уже существует, закрываем
-		sessionClose(chatID)
-		// Создаем сессию для конкретного чата для управления текущим состоянием карточки
-		cardSession := initCardSession(chatID, products, "ceramic")
-		messageText := cardSession.Card.GetTextTemplate()
-		sendMessage(bot, chatID, messageText, cardSession.Keyboard)
+		// //Если уже существует, закрываем
+		// sessionClose(chatID)
+		// // Создаем сессию для конкретного чата для управления текущим состоянием карточки
+		// cardSession := initCardSession(chatID, products, "ceramic")
+		// messageText := cardSession.Card.GetTextTemplate()
+		// sendMessage(bot, chatID, messageText, cardSession.Keyboard)
 	case "prev":
-		cardSession, exists := sessions[chatID]
-		if !exists {
-			return
-		}
-		cardSession.Card.Prev()
-		messageText := cardSession.Card.GetTextTemplate()
-		sendMessage(bot, chatID, messageText, cardSession.Keyboard)
+
 	case "next":
-		cardSession, exists := sessions[chatID]
-		if !exists {
-			return
-		}
-		cardSession.Card.Next()
-		messageText := cardSession.Card.GetTextTemplate()
-		sendMessage(bot, chatID, messageText, cardSession.Keyboard)
+
 	}
 
+}
+
+func getUserInfo(update tgbotapi.Update) *sessions.UserInfo {
+	user := update.Message.From
+	return &sessions.UserInfo{
+		UserID:     user.ID,
+		First_name: user.FirstName,
+		Last_name:  user.LastName,
+		User_name:  user.UserName,
+	}
 }
