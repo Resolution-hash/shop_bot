@@ -3,13 +3,15 @@ package app
 import (
 	"database/sql"
 	"fmt"
+	"log"
+
+	"github.com/Resolution-hash/shop_bot/config"
+	"github.com/Resolution-hash/shop_bot/internal/card"
+	"github.com/Resolution-hash/shop_bot/internal/repository"
+	"github.com/Resolution-hash/shop_bot/internal/services"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	_ "github.com/mattn/go-sqlite3"
-	"log"
-	"telegram_bot/config"
-	"telegram_bot/internal/card"
-	"telegram_bot/internal/repository"
-	"telegram_bot/internal/services"
 )
 
 var sessions map[int64]card.CardSession
@@ -25,7 +27,7 @@ func StartBot(cfg *config.Config) {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	updates := bot.GetUpdatesChan(u)
+	updates, err := bot.GetUpdatesChan(u)
 
 	for update := range updates {
 		if update.Message != nil {

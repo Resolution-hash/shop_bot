@@ -2,8 +2,9 @@ package card
 
 import (
 	"fmt"
+
+	"github.com/Resolution-hash/shop_bot/internal/repository"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"telegram_bot/internal/repository"
 )
 
 type Card struct {

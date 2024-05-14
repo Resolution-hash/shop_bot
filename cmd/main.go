@@ -2,8 +2,9 @@ package main
 
 import (
 	"log"
-	"telegram_bot/config"
-	"telegram_bot/internal/app"
+
+	"github.com/Resolution-hash/shop_bot/config"
+	"github.com/Resolution-hash/shop_bot/internal/app"
 )
 
 func main() {

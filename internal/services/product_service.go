@@ -2,7 +2,8 @@ package services
 
 import (
 	"log"
-	"telegram_bot/internal/repository"
+
+	"github.com/Resolution-hash/shop_bot/internal/repository"
 )
 
 type Card struct {

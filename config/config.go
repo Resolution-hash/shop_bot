@@ -1,27 +1,29 @@
 package config
 
 import (
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
+	"log"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
-var CfgPath = "/home/leo/go/src/telegram_bot/config/config.yaml"
+var cfgPath = "C:/Users/Leoni/OneDrive/Документы/projects/shop_bot/config/.env"
 
 type Config struct {
-	TelegramAPIToken string `yaml:"BOT_TOKEN"`
-	DbUrl            string `yaml:"DB_URL"`
+	TelegramAPIToken string
+	DbUrl            string
 }
 
 func LoadConfig() (*Config, error) {
-	buf, err := ioutil.ReadFile(CfgPath)
+
+	err := godotenv.Load(cfgPath)
 	if err != nil {
-		return nil, err
+		log.Fatal("Error loading .env file")
 	}
 
-	var config Config
-	err = yaml.Unmarshal(buf, &config)
-	if err != nil {
-		return nil, err
+	config := Config{
+		TelegramAPIToken: os.Getenv("BOT_TOKEN"),
+		DbUrl:            os.Getenv("DB_URL"),
 	}
 
 	return &config, nil
