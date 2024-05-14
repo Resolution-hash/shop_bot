@@ -93,8 +93,8 @@ func sendMessage(bot *tgbotapi.BotAPI, chatID int64, text string, keyboard inter
 
 }
 
-func deleteMessage(bot *tgbotapi.BotAPI, chatID int64, messageID int) {
-	deleteConfig := tgbotapi.NewDeleteMessage(chatID, messageID)
+func deleteMessage(bot *tgbotapi.BotAPI, chatInfo *sessions.ChatInfo) {
+	deleteConfig := tgbotapi.NewDeleteMessage(chatInfo.ChatID, chatInfo.MessageID)
 	if _, err := bot.Send(deleteConfig); err != nil {
 		log.Printf("Ошибка при удалении сообщения: %s\n", err)
 	}
@@ -156,33 +156,41 @@ func getMessageText(step string) string {
 
 func handleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	userInfo := getUserInfo(update)
-
+	chatInfo := getChatInfo(update)
+	deleteMessage(bot, chatInfo)
 	switch update.Message.Text {
 	case "/start":
 		keyboard := getKeyboard("start", nil)
 		messageText := getMessageText("start")
-		SessionManager.CreateSession(userInfo, keyboard, "start", "")
-		SessionManager.PrintSessionData()
+		SessionManager.CreateSession(userInfo, chatInfo, keyboard, "start", "start")
+		SessionManager.PrintSessionByID(userInfo.UserID)
 		sendMessage(bot, update.Message.Chat.ID, messageText, keyboard)
 	default:
 		keyboard := getKeyboard("start", nil)
 		messageText := getMessageText("")
-		SessionManager.CreateSession(userInfo, keyboard, "errorCommand", "")
+		SessionManager.CreateSession(userInfo, chatInfo, keyboard, "errorCommand", "")
+		SessionManager.PrintSessionByID(userInfo.UserID)
 		sendMessage(bot, update.Message.Chat.ID, messageText, keyboard)
 	}
 }
 
 func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	data := update.CallbackQuery.Data
-	chatID := update.CallbackQuery.Message.Chat.ID
-	messageID := update.CallbackQuery.Message.MessageID
-	deleteMessage(bot, chatID, messageID)
+	userInfo := getUserInfo(update)
+	chatInfo := getChatInfo(update)
+	_, exists := SessionManager.GetSession(userInfo.UserID)
+	if !exists {
+		SessionManager.CreateSession(userInfo, chatInfo, tgbotapi.NewInlineKeyboardMarkup(), data, "")
+	}
+	deleteMessage(bot, chatInfo)
 
 	switch data {
 	case "ceramic":
-
 		keyboard := getKeyboard(data, nil)
-		sendMessage(bot, chatID, "Выберите категорию: ", keyboard)
+		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
+		SessionManager.PrintSessionByID(userInfo.UserID)
+		SessionManager.UpdatePrevStep(userInfo.UserID, data)
+		sendMessage(bot, chatInfo.ChatID, "Выберите категорию: ", keyboard)
 	case "lemons":
 		db, err := setupDatabase()
 
@@ -260,11 +268,34 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 }
 
 func getUserInfo(update tgbotapi.Update) *sessions.UserInfo {
+	if update.CallbackQuery != nil {
+		user := update.CallbackQuery.From
+		return &sessions.UserInfo{
+			UserID:     user.ID,
+			First_name: user.FirstName,
+			Last_name:  user.LastName,
+			User_name:  user.UserName,
+		}
+
+	}
 	user := update.Message.From
 	return &sessions.UserInfo{
 		UserID:     user.ID,
 		First_name: user.FirstName,
 		Last_name:  user.LastName,
 		User_name:  user.UserName,
+	}
+}
+
+func getChatInfo(update tgbotapi.Update) *sessions.ChatInfo {
+	if update.CallbackQuery != nil {
+		return &sessions.ChatInfo{
+			ChatID:    update.CallbackQuery.Message.Chat.ID,
+			MessageID: update.CallbackQuery.Message.MessageID,
+		}
+	}
+	return &sessions.ChatInfo{
+		ChatID:    update.Message.Chat.ID,
+		MessageID: update.Message.MessageID,
 	}
 }
