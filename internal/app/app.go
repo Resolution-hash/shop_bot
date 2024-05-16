@@ -162,13 +162,13 @@ func handleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		keyboard := getKeyboard("start", nil)
 		messageText := getMessageText("start")
 		SessionManager.CreateSession(userInfo, keyboard, "start", "start")
-		SessionManager.PrintSessionByID(userInfo.UserID)
+		SessionManager.PrintLogs(userInfo.UserID)
 		sendMessage(bot, userInfo.UserID, messageText, keyboard)
 	default:
 		keyboard := getKeyboard("start", nil)
 		messageText := getMessageText("")
 		SessionManager.CreateSession(userInfo, keyboard, "errorCommand", "")
-		SessionManager.PrintSessionByID(userInfo.UserID)
+		SessionManager.PrintLogs(userInfo.UserID)
 		sendMessage(bot, userInfo.UserID, messageText, keyboard)
 	}
 }
@@ -186,7 +186,7 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	case "ceramic":
 		keyboard := getKeyboard(data, nil)
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
-		SessionManager.PrintSessionByID(userInfo.UserID)
+		SessionManager.PrintLogs(userInfo.UserID)
 		sendMessage(bot, userInfo.UserID, "Выберите категорию: ", keyboard)
 	case "lemons":
 
@@ -197,25 +197,21 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		}
 		service := initProductService(db)
 
-		// products, err := service.GetProductByType(data)
-		// if err != nil {
-		// 	log.Println(err)
-		// }
-		// if products == nil {
-		// 	sendMessage(bot, userInfo.UserID, "Товаров нет", nil)
-		// }
-		products, err := service.GetAllProducts()
+		products, err := service.GetProductByType(data)
 		if err != nil {
 			log.Println(err)
 		}
-		if products == nil {
-			sendMessage(bot, userInfo.UserID, "Товаров нет", nil)
-			return
-		}
+
+		// if products == nil {
+		// 	sendMessage(bot, userInfo.UserID, "Товаров нет", nil)
+		// }
+		card := card.NewCard(products)
+		session.CardManager.UpdateInfo(data, card)
+
 		color.Red.Println(products)
 		keyboard := getKeyboard("card", session.PrevStep)
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
-		card := card.NewCard(products)
+
 		sendMessage(bot, userInfo.UserID, card.GetTextTemplate(), keyboard)
 
 		fmt.Println("\n\n\n\n", products)
@@ -271,9 +267,26 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		// messageText := cardSession.Card.GetTextTemplate()
 		// sendMessage(bot, chatID, messageText, cardSession.Keyboard)
 	case "prev":
+		defer func() {
+			SessionManager.PrintLogs(userInfo.UserID)
+			session.CardManager.PrintLogs()
+		}()
+		color.Blueln("prev")
+		session.CardManager.CurrentCard.Prev()
+		keyboard := getKeyboard("card", session.PrevStep)
+		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
 
+		sendMessage(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard)
 	case "next":
-
+		defer func() {
+			SessionManager.PrintLogs(userInfo.UserID)
+			session.CardManager.PrintLogs()
+		}()
+		color.Blueln("next")
+		session.CardManager.CurrentCard.Next()
+		keyboard := getKeyboard("card", session.PrevStep)
+		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
+		sendMessage(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard)
 	}
 
 }
