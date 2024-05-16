@@ -2,7 +2,9 @@ package repository
 
 import (
 	"database/sql"
+
 	"github.com/Masterminds/squirrel"
+	"github.com/gookit/color"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -43,6 +45,7 @@ func (repo *SqliteProductRepo) CreateProduct(product Product) error {
 }
 
 func (repo *SqliteProductRepo) GetAllProducts() ([]Product, error) {
+	color.Redln(repo.db)
 	rows, err := prepareQuery("select", "products", nil).(squirrel.SelectBuilder).
 		RunWith(repo.db).
 		Query()

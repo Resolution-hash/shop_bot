@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Package",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "C:\\Users\\Leoni\\Documents\\projects\\shop_bot\\cmd\\main.go",
+            "env": {
+                "CGO_ENABLED": "1",
+            },
+            "args": []
+        }
+    ]
+}

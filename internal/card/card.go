@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Resolution-hash/shop_bot/internal/repository"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 type Card struct {
@@ -14,11 +13,6 @@ type Card struct {
 	TotalCards  int
 	CurrentCard int
 	ProductList []repository.Product
-}
-
-type CardSession struct {
-	Card     *Card
-	Keyboard tgbotapi.InlineKeyboardMarkup
 }
 
 func NewCard(products []repository.Product) *Card {

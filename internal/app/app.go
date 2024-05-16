@@ -6,11 +6,11 @@ import (
 	"log"
 
 	"github.com/Resolution-hash/shop_bot/config"
-	// "github.com/Resolution-hash/shop_bot/internal/card"
+	"github.com/Resolution-hash/shop_bot/internal/card"
 	"github.com/Resolution-hash/shop_bot/internal/repository"
 	"github.com/Resolution-hash/shop_bot/internal/services"
 	"github.com/Resolution-hash/shop_bot/internal/sessions"
-	"github.com/fatih/color"
+	"github.com/gookit/color"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	_ "github.com/mattn/go-sqlite3"
@@ -33,7 +33,7 @@ func StartBot(cfg *config.Config) {
 
 	for update := range updates {
 		if update.Message != nil {
-			color.Blue("\n\n\n" + update.Message.Text)
+			color.Blue.Print("\n\n\n" + update.Message.Text)
 			handleCommand(bot, update)
 		}
 		if update.CallbackQuery != nil {
@@ -69,21 +69,20 @@ func setupDatabase() (*sql.DB, error) {
 
 	db, err := sql.Open("sqlite3", cfg.DbUrl)
 	if err != nil {
+		fmt.Println("error to get cfg.DbUrl")
 		return nil, err
-		//keyboard := selectKeyboard("showAllItems")
-		//sendMessage(bot, chatID, err.Error(), keyboard)
 	}
 	return db, nil
 }
 
-func initServices(db *sql.DB) *services.ProductService {
+func initProductService(db *sql.DB) *services.ProductService {
 	repo := repository.NewSqliteProductRepo(db)
 	service := services.NewProductService(repo)
 	return service
 }
 
-func sendMessage(bot *tgbotapi.BotAPI, chatID int64, text string, keyboard interface{}) {
-	msg := tgbotapi.NewMessage(chatID, text)
+func sendMessage(bot *tgbotapi.BotAPI, userID int, text string, keyboard interface{}) {
+	msg := tgbotapi.NewMessage(int64(userID), text)
 	if keyboard != nil {
 		msg.ReplyMarkup = keyboard.(tgbotapi.InlineKeyboardMarkup)
 	}
@@ -93,8 +92,8 @@ func sendMessage(bot *tgbotapi.BotAPI, chatID int64, text string, keyboard inter
 
 }
 
-func deleteMessage(bot *tgbotapi.BotAPI, chatInfo *sessions.ChatInfo) {
-	deleteConfig := tgbotapi.NewDeleteMessage(chatInfo.ChatID, chatInfo.MessageID)
+func deleteMessage(bot *tgbotapi.BotAPI, messageID int, userID int) {
+	deleteConfig := tgbotapi.NewDeleteMessage(int64(userID), messageID)
 	if _, err := bot.Send(deleteConfig); err != nil {
 		log.Printf("Ошибка при удалении сообщения: %s\n", err)
 	}
@@ -130,6 +129,7 @@ func getKeyboard(value string, back interface{}) tgbotapi.InlineKeyboardMarkup {
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("←", "prev"),
+				tgbotapi.NewInlineKeyboardButtonData("Добавить в корзину", "prev"),
 				tgbotapi.NewInlineKeyboardButtonData("→", "next"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
@@ -140,7 +140,7 @@ func getKeyboard(value string, back interface{}) tgbotapi.InlineKeyboardMarkup {
 
 	default:
 		keyboard := tgbotapi.NewInlineKeyboardMarkup()
-		log.Println("value is not found on func selectKeyboard()")
+		log.Println("value is not found on func getKeyboard()")
 		return keyboard
 	}
 }
@@ -156,56 +156,67 @@ func getMessageText(step string) string {
 
 func handleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	userInfo := getUserInfo(update)
-	chatInfo := getChatInfo(update)
-	deleteMessage(bot, chatInfo)
+	deleteMessage(bot, userInfo.MessageID, userInfo.UserID)
 	switch update.Message.Text {
 	case "/start":
 		keyboard := getKeyboard("start", nil)
 		messageText := getMessageText("start")
-		SessionManager.CreateSession(userInfo, chatInfo, keyboard, "start", "start")
+		SessionManager.CreateSession(userInfo, keyboard, "start", "start")
 		SessionManager.PrintSessionByID(userInfo.UserID)
-		sendMessage(bot, update.Message.Chat.ID, messageText, keyboard)
+		sendMessage(bot, userInfo.UserID, messageText, keyboard)
 	default:
 		keyboard := getKeyboard("start", nil)
 		messageText := getMessageText("")
-		SessionManager.CreateSession(userInfo, chatInfo, keyboard, "errorCommand", "")
+		SessionManager.CreateSession(userInfo, keyboard, "errorCommand", "")
 		SessionManager.PrintSessionByID(userInfo.UserID)
-		sendMessage(bot, update.Message.Chat.ID, messageText, keyboard)
+		sendMessage(bot, userInfo.UserID, messageText, keyboard)
 	}
 }
 
 func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	data := update.CallbackQuery.Data
 	userInfo := getUserInfo(update)
-	chatInfo := getChatInfo(update)
-	_, exists := SessionManager.GetSession(userInfo.UserID)
+	session, exists := SessionManager.GetSession(userInfo.UserID)
 	if !exists {
-		SessionManager.CreateSession(userInfo, chatInfo, tgbotapi.NewInlineKeyboardMarkup(), data, "")
+		SessionManager.CreateSession(userInfo, tgbotapi.NewInlineKeyboardMarkup(), data, "")
 	}
-	deleteMessage(bot, chatInfo)
+	deleteMessage(bot, userInfo.MessageID, userInfo.UserID)
 
 	switch data {
 	case "ceramic":
 		keyboard := getKeyboard(data, nil)
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
 		SessionManager.PrintSessionByID(userInfo.UserID)
-		SessionManager.UpdatePrevStep(userInfo.UserID, data)
-		sendMessage(bot, chatInfo.ChatID, "Выберите категорию: ", keyboard)
+		sendMessage(bot, userInfo.UserID, "Выберите категорию: ", keyboard)
 	case "lemons":
+
 		db, err := setupDatabase()
 
 		if err != nil {
 			log.Println(err)
 		}
-		service := initServices(db)
+		service := initProductService(db)
 
-		products, err := service.GetProductByType(data)
+		// products, err := service.GetProductByType(data)
+		// if err != nil {
+		// 	log.Println(err)
+		// }
+		// if products == nil {
+		// 	sendMessage(bot, userInfo.UserID, "Товаров нет", nil)
+		// }
+		products, err := service.GetAllProducts()
 		if err != nil {
 			log.Println(err)
 		}
-		//Если уже существует, закрываем
-
-		// sendMessage(bot, chatID, messageText, cardSession.Keyboard)
+		if products == nil {
+			sendMessage(bot, userInfo.UserID, "Товаров нет", nil)
+			return
+		}
+		color.Red.Println(products)
+		keyboard := getKeyboard("card", session.PrevStep)
+		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
+		card := card.NewCard(products)
+		sendMessage(bot, userInfo.UserID, card.GetTextTemplate(), keyboard)
 
 		fmt.Println("\n\n\n\n", products)
 	case "grenades":
@@ -272,30 +283,33 @@ func getUserInfo(update tgbotapi.Update) *sessions.UserInfo {
 		user := update.CallbackQuery.From
 		return &sessions.UserInfo{
 			UserID:     user.ID,
+			MessageID:  update.CallbackQuery.Message.MessageID,
 			First_name: user.FirstName,
 			Last_name:  user.LastName,
 			User_name:  user.UserName,
 		}
 
 	}
+
 	user := update.Message.From
 	return &sessions.UserInfo{
 		UserID:     user.ID,
+		MessageID:  update.Message.MessageID,
 		First_name: user.FirstName,
 		Last_name:  user.LastName,
 		User_name:  user.UserName,
 	}
 }
 
-func getChatInfo(update tgbotapi.Update) *sessions.ChatInfo {
-	if update.CallbackQuery != nil {
-		return &sessions.ChatInfo{
-			ChatID:    update.CallbackQuery.Message.Chat.ID,
-			MessageID: update.CallbackQuery.Message.MessageID,
-		}
-	}
-	return &sessions.ChatInfo{
-		ChatID:    update.Message.Chat.ID,
-		MessageID: update.Message.MessageID,
-	}
-}
+// func getChatInfo(update tgbotapi.Update) *sessions.ChatInfo {
+// 	if update.CallbackQuery != nil {
+// 		return &sessions.ChatInfo{
+// 			ChatID:    update.CallbackQuery.Message.Chat.ID,
+// 			MessageID: update.CallbackQuery.Message.MessageID,
+// 		}
+// 	}
+// 	return &sessions.ChatInfo{
+// 		ChatID:    update.Message.Chat.ID,
+// 		MessageID: update.Message.MessageID,
+// 	}
+// }
