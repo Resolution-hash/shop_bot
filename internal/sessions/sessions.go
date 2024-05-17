@@ -56,7 +56,7 @@ func (sm *SessionManager) UpdateSession(userID int, keyboard tgbotapi.InlineKeyb
 	defer sm.mu.Unlock()
 	session := sm.sessions[userID]
 	session.Keyboard = keyboard
-	if newStep != "prev" && newStep != "next" && newStep != "addToCart" {
+	if newStep != "prev" && newStep != "next" && newStep != "addToCart" && newStep != "increment" && newStep != "decrement" {
 		session.PrevStep = session.CurrentStep
 		session.CurrentStep = newStep
 	}

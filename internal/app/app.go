@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 
-
 	"github.com/Resolution-hash/shop_bot/config"
 	"github.com/Resolution-hash/shop_bot/internal/card"
 	"github.com/Resolution-hash/shop_bot/internal/repository"
@@ -145,7 +144,26 @@ func getKeyboard(value string, back interface{}) tgbotapi.InlineKeyboardMarkup {
 	}
 }
 
-func getDynamicKeyboard(value string, prevStep string, quantity string) tgbotapi.InlineKeyboardMarkup {
+func getDynamicKeyboard(value string, session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
+	currentCard := session.CardManager.CurrentCard
+	total := session.CartManager.Total(currentCard.ID)
+	color.Redln("total in func:", total)
+	var cartButtons []tgbotapi.InlineKeyboardButton
+
+	if total != "0" {
+		cartButtons = tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("-", "decrement"),
+			tgbotapi.NewInlineKeyboardButtonData(total, "no_action"),
+			tgbotapi.NewInlineKeyboardButtonData("+", "increment"),
+		)
+
+	} else {
+		cartButtons = tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Добавить в корзину", "addToCart"),
+		)
+
+	}
+
 	switch value {
 	case "addToCart":
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
@@ -153,13 +171,9 @@ func getDynamicKeyboard(value string, prevStep string, quantity string) tgbotapi
 				tgbotapi.NewInlineKeyboardButtonData("←", "prev"),
 				tgbotapi.NewInlineKeyboardButtonData("→", "next"),
 			),
+			cartButtons,
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("-", "increment"),
-				tgbotapi.NewInlineKeyboardButtonData(quantity, "no_action"),
-				tgbotapi.NewInlineKeyboardButtonData("+", "decrement"),
-			),
-			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Вернуться", prevStep),
+				tgbotapi.NewInlineKeyboardButtonData("Вернуться", session.PrevStep),
 			),
 		)
 		return keyboard
@@ -169,18 +183,16 @@ func getDynamicKeyboard(value string, prevStep string, quantity string) tgbotapi
 				tgbotapi.NewInlineKeyboardButtonData("←", "prev"),
 				tgbotapi.NewInlineKeyboardButtonData("→", "next"),
 			),
+			cartButtons,
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Добавить в корзину", "addToCart"),
-			),
-			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Вернуться", prevStep),
+				tgbotapi.NewInlineKeyboardButtonData("Вернуться", session.PrevStep),
 			),
 		)
 		return keyboard
 	case "back":
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Вернуться назад", prevStep),
+				tgbotapi.NewInlineKeyboardButtonData("Вернуться назад", session.PrevStep),
 			),
 		)
 		return keyboard
@@ -257,7 +269,7 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 		card := card.NewCard(products)
 		session.CardManager.UpdateInfo(data, card)
-		keyboard := getDynamicKeyboard("card", session.PrevStep, "")
+		keyboard := getDynamicKeyboard("card", session)
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
 		SessionManager.PrintLogs(userInfo.UserID)
 		sendCard(bot, userInfo.UserID, card.GetTextTemplate(), keyboard, card.Image)
@@ -282,7 +294,7 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 		card := card.NewCard(products)
 		session.CardManager.UpdateInfo(data, card)
-		keyboard := getDynamicKeyboard("card", session.PrevStep, "")
+		keyboard := getDynamicKeyboard("card", session)
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
 		SessionManager.PrintLogs(userInfo.UserID)
 		sendCard(bot, userInfo.UserID, card.GetTextTemplate(), keyboard, card.Image)
@@ -332,7 +344,7 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 		card := card.NewCard(products)
 		session.CardManager.UpdateInfo(data, card)
-		keyboard := getDynamicKeyboard("card", session.PrevStep, "")
+		keyboard := getDynamicKeyboard("card", session)
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
 		SessionManager.PrintLogs(userInfo.UserID)
 		sendCard(bot, userInfo.UserID, card.GetTextTemplate(), keyboard, card.Image)
@@ -344,7 +356,7 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		}()
 		color.Blueln("prev")
 		currentCard.Prev()
-		keyboard := getDynamicKeyboard("card", session.PrevStep, "")
+		keyboard := getDynamicKeyboard("card", session)
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
 
 		sendCard(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard, currentCard.Image)
@@ -356,7 +368,7 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		}()
 		color.Blueln("next")
 		currentCard.Next()
-		keyboard := getDynamicKeyboard("card", session.PrevStep, "")
+		keyboard := getDynamicKeyboard("card", session)
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
 		sendCard(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard, currentCard.Image)
 	case "addToCart":
@@ -380,13 +392,72 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			Quantity:  1,
 		}
 
-		_, err = service.AddItem(item)
+		total, err := service.AddItem(item)
 		if err != nil {
 			color.Redln("Error to add item:", err)
 		}
+		color.Redln("total in db:", total)
 
 		session.CartManager.Add(item)
-		keyboard := getDynamicKeyboard("addToCart", session.PrevStep, session.CartManager.Quantitiy(item))
+		keyboard := getDynamicKeyboard("addToCart", session)
+		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
+		sendCard(bot, userInfo.UserID, currentCard.GetTextTemplate(), keyboard, currentCard.Image)
+	case "increment":
+		defer func(s *sessions.Session) {
+			s.CardManager.PrintLogs()
+			s.CartManager.PrintLogs()
+		}(session)
+		currentCard := session.CardManager.CurrentCard
+
+		db, err := setupDatabase()
+		if err != nil {
+			color.Redln(err)
+		}
+		defer db.Close()
+
+		repo := repository.NewSqliteCartRepo(db)
+		service := services.NewCartService(repo)
+
+		item := repository.CartItem{
+			ProductID: currentCard.ID,
+			UserID:    int64(userInfo.UserID),
+		}
+
+		total, err := service.Increment(item)
+		if err != nil {
+			color.Redln("Error to increment item:", err)
+		}
+		session.CartManager.UpdateQuantity(currentCard.ID, total)
+		keyboard := getDynamicKeyboard("addToCart", session)
+		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
+		sendCard(bot, userInfo.UserID, currentCard.GetTextTemplate(), keyboard, currentCard.Image)
+	case "decrement":
+		defer func(s *sessions.Session) {
+			s.CardManager.PrintLogs()
+			s.CartManager.PrintLogs()
+		}(session)
+		currentCard := session.CardManager.CurrentCard
+
+		db, err := setupDatabase()
+		if err != nil {
+			color.Redln(err)
+		}
+		defer db.Close()
+
+		repo := repository.NewSqliteCartRepo(db)
+		service := services.NewCartService(repo)
+
+		item := repository.CartItem{
+			ProductID: currentCard.ID,
+			UserID:    int64(userInfo.UserID),
+		}
+
+		total, err := service.Decrement(item)
+		if err != nil {
+			color.Redln("Error to increment item:", err)
+		}
+		session.CartManager.UpdateQuantity(currentCard.ID, total)
+		keyboard := getDynamicKeyboard("addToCart", session)
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
 		sendCard(bot, userInfo.UserID, currentCard.GetTextTemplate(), keyboard, currentCard.Image)
 	}

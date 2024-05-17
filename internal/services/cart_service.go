@@ -17,3 +17,11 @@ func NewCartService(repo repository.CartRepo) *CartService {
 func (s *CartService) AddItem(item repository.CartItem) (int, error) {
 	return s.Repo.AddItem(item)
 }
+
+func (s *CartService) Increment(item repository.CartItem) (int, error) {
+	return s.Repo.Increment(item)
+}
+
+func (s *CartService) Decrement(item repository.CartItem) (int, error) {
+	return s.Repo.Decrement(item)
+}

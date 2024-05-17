@@ -27,8 +27,12 @@ func (c *Cart) Add(item CartItem) {
 	c.Items[item.ProductID] = item.Quantity
 }
 
-func (c *Cart) Quantitiy(item CartItem) string {
-	return strconv.Itoa(c.Items[item.ProductID])
+func (c *Cart) UpdateQuantity(productID int64, quantity int) {
+	c.Items[productID] = quantity
+}
+
+func (c *Cart) Total(productID int64) string {
+	return strconv.Itoa(c.Items[productID])
 }
 
 func (c *Cart) PrintLogs() {
@@ -41,8 +45,8 @@ func (c *Cart) PrintLogs() {
 
 type CartRepo interface {
 	AddItem(CartItem) (int, error)
-	// Increment(int64) error
-	// Decrement(int64) error
+	Increment(CartItem) (int, error)
+	Decrement(CartItem) (int, error)
 	// RemoveItem(int64) error
 	// GetItemsByID(int64) ([]CartItem, error)
 }
