@@ -4,7 +4,6 @@ import (
 	"database/sql"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/gookit/color"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -33,7 +32,6 @@ func (repo *SqliteProductRepo) UpdateProduct(product Product) error {
 }
 
 func (repo *SqliteProductRepo) CreateProduct(product Product) error {
-
 	_, err := prepareQuery("insert", "products", product).(squirrel.InsertBuilder).
 		RunWith(repo.db).
 		Exec()
@@ -45,7 +43,6 @@ func (repo *SqliteProductRepo) CreateProduct(product Product) error {
 }
 
 func (repo *SqliteProductRepo) GetAllProducts() ([]Product, error) {
-	color.Redln(repo.db)
 	rows, err := prepareQuery("select", "products", nil).(squirrel.SelectBuilder).
 		RunWith(repo.db).
 		Query()

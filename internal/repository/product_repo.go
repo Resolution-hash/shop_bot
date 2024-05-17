@@ -1,11 +1,17 @@
 package repository
 
+import "reflect"
+
 type Product struct {
 	ID          int64
 	Name        string
 	Type        string
 	Description string
 	Price       float64
+}
+
+func IsEmpty(v interface{}) bool {
+	return reflect.DeepEqual(v, reflect.Zero(reflect.TypeOf(v)).Interface())
 }
 
 type ProductRepo interface {

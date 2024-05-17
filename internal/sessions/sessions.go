@@ -60,6 +60,17 @@ func (sm *SessionManager) UpdateSession(userID int, keyboard tgbotapi.InlineKeyb
 
 }
 
+func (sm *SessionManager) UpdateStep(userID int, newStep string) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	session := sm.sessions[userID]
+	if newStep != "prev" && newStep != "next" {
+		session.PrevStep = session.CurrentStep
+		session.CurrentStep = newStep
+	}
+
+}
+
 func (sm *SessionManager) GetSession(userID int) (*Session, bool) {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()

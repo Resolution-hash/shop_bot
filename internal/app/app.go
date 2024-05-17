@@ -137,7 +137,13 @@ func getKeyboard(value string, back interface{}) tgbotapi.InlineKeyboardMarkup {
 			),
 		)
 		return keyboard
-
+	case "back":
+		keyboard := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Вернуться назад", back.(string)),
+			),
+		)
+		return keyboard
 	default:
 		keyboard := tgbotapi.NewInlineKeyboardMarkup()
 		log.Println("value is not found on func getKeyboard()")
@@ -202,70 +208,96 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			log.Println(err)
 		}
 
-		// if products == nil {
-		// 	sendMessage(bot, userInfo.UserID, "Товаров нет", nil)
-		// }
+		if repository.IsEmpty(products) {
+			keyboard := getKeyboard("back", session.PrevStep)
+			SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
+			sendMessage(bot, userInfo.UserID, "Товаров нет.", keyboard)
+			return
+		}
+
 		card := card.NewCard(products)
 		session.CardManager.UpdateInfo(data, card)
-
-		color.Red.Println(products)
 		keyboard := getKeyboard("card", session.PrevStep)
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
+		SessionManager.PrintLogs(userInfo.UserID)
+		sendMessage(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard)
 
-		sendMessage(bot, userInfo.UserID, card.GetTextTemplate(), keyboard)
-
-		fmt.Println("\n\n\n\n", products)
 	case "grenades":
-		// db, err := setupDatabase()
-		// if err != nil {
-		// 	log.Println(err)
-		// }
-		// service := initServices(db)
+		db, err := setupDatabase()
+		if err != nil {
+			log.Println(err)
+		}
+		service := initProductService(db)
 
-		// products, err := service.GetProductByType(data)
-		// if err != nil {
-		// 	log.Println(err)
-		// }
+		products, err := service.GetProductByType(data)
+		if err != nil {
+			log.Println(err)
+		}
 
-		// sessionClose(chatID)
+		if repository.IsEmpty(products) {
+			keyboard := getKeyboard("back", session.PrevStep)
+			SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
+			sendMessage(bot, userInfo.UserID, "Товаров нет", keyboard)
+			return
+		}
 
-		// cardSession := initCardSession(chatID, products, "ceramic")
-		// messageText := cardSession.Card.GetTextTemplate()
-		// sendMessage(bot, chatID, messageText, cardSession.Keyboard)
+		card := card.NewCard(products)
+		session.CardManager.UpdateInfo(data, card)
+		keyboard := getKeyboard("card", session.PrevStep)
+		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
+		SessionManager.PrintLogs(userInfo.UserID)
+		sendMessage(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard)
+
 	case "drawings":
-		// db, err := setupDatabase()
-		// if err != nil {
-		// 	log.Println(err)
-		// }
-		// service := initServices(db)
+		db, err := setupDatabase()
+		if err != nil {
+			log.Println(err)
+		}
+		service := initProductService(db)
 
-		// products, err := service.GetProductByType(data)
-		// if err != nil {
-		// 	log.Println(err)
-		// }
-		// sessionClose(chatID)
+		products, err := service.GetProductByType(data)
+		if err != nil {
+			log.Println(err)
+		}
 
-		// cardSession := initCardSession(chatID, products, "ceramic")
-		// messageText := cardSession.Card.GetTextTemplate()
-		// sendMessage(bot, chatID, messageText, cardSession.Keyboard)
+		if repository.IsEmpty(products) {
+			keyboard := getKeyboard("back", session.PrevStep)
+			SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
+			sendMessage(bot, userInfo.UserID, "Товаров нет", keyboard)
+			return
+		}
+
+		card := card.NewCard(products)
+		session.CardManager.UpdateInfo(data, card)
+		keyboard := getKeyboard("card", session.PrevStep)
+		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
+		SessionManager.PrintLogs(userInfo.UserID)
+		sendMessage(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard)
 	case "showAllItems":
-		// db, err := setupDatabase()
-		// if err != nil {
-		// 	log.Println(err)
-		// }
-		// service := initServices(db)
+		db, err := setupDatabase()
+		if err != nil {
+			log.Println(err)
+		}
+		service := initProductService(db)
 
-		// products, err := service.GetAllProducts()
-		// if err != nil {
-		// 	log.Fatal(err)
-		// }
+		products, err := service.GetAllProducts()
+		if err != nil {
+			log.Println(err)
+		}
 
-		// //Если уже существует, закрываем
-		// sessionClose(chatID)
-		// // Создаем сессию для конкретного чата для управления текущим состоянием карточки
-		// cardSession := initCardSession(chatID, products, "ceramic")
-		// messageText := cardSession.Card.GetTextTemplate()
-		// sendMessage(bot, chatID, messageText, cardSession.Keyboard)
+		if repository.IsEmpty(products) {
+			keyboard := getKeyboard("back", session.PrevStep)
+			SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
+			sendMessage(bot, userInfo.UserID, "Товаров нет", keyboard)
+			return
+		}
+
+		card := card.NewCard(products)
+		session.CardManager.UpdateInfo(data, card)
+		keyboard := getKeyboard("card", session.PrevStep)
+		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
+		SessionManager.PrintLogs(userInfo.UserID)
+		sendMessage(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard)
 	case "prev":
 		defer func() {
 			SessionManager.PrintLogs(userInfo.UserID)
