@@ -13,8 +13,9 @@ type Card struct {
 	Type        string
 	Description string
 	Price       float64
+	Image       string
 	TotalCards  int
-	CurrentCard int
+	CurrentCardNumber int
 	ProductList []repository.Product
 }
 
@@ -49,6 +50,7 @@ func (cm *CardManager) PrintLogs() {
 	color.Yellowln("ProductType:", cm.CurrentCard.Type)
 	color.Yellowln("ProductDescription:", cm.CurrentCard.Description)
 	color.Yellowln("ProductPrice:", cm.CurrentCard.Price)
+	color.Yellowln("Image:", cm.CurrentCard.Image)
 	fmt.Print("___________________\n\n")
 }
 
@@ -60,8 +62,9 @@ func NewCard(products []repository.Product) *Card {
 			Type:        products[0].Type,
 			Description: products[0].Description,
 			Price:       products[0].Price,
+			Image:       products[0].Image,
 			TotalCards:  len(products),
-			CurrentCard: 0,
+			CurrentCardNumber: 0,
 			ProductList: products,
 		}
 	}
@@ -69,28 +72,30 @@ func NewCard(products []repository.Product) *Card {
 }
 
 func (c *Card) Prev() {
-	if c.CurrentCard > 0 {
-		c.CurrentCard--
-		c.ID = c.ProductList[c.CurrentCard].ID
-		c.Type = c.ProductList[c.CurrentCard].Type
-		c.Name = c.ProductList[c.CurrentCard].Name
-		c.Description = c.ProductList[c.CurrentCard].Description
-		c.Price = c.ProductList[c.CurrentCard].Price
+	if c.CurrentCardNumber > 0 {
+		c.CurrentCardNumber--
+		c.ID = c.ProductList[c.CurrentCardNumber].ID
+		c.Type = c.ProductList[c.CurrentCardNumber].Type
+		c.Name = c.ProductList[c.CurrentCardNumber].Name
+		c.Description = c.ProductList[c.CurrentCardNumber].Description
+		c.Price = c.ProductList[c.CurrentCardNumber].Price
+		c.Image = c.ProductList[c.CurrentCardNumber].Image
 	}
 
 }
 func (c *Card) Next() {
-	if c.CurrentCard < c.TotalCards-1 {
-		c.CurrentCard++
-		c.ID = c.ProductList[c.CurrentCard].ID
-		c.Type = c.ProductList[c.CurrentCard].Type
-		c.Name = c.ProductList[c.CurrentCard].Name
-		c.Description = c.ProductList[c.CurrentCard].Description
-		c.Price = c.ProductList[c.CurrentCard].Price
+	if c.CurrentCardNumber < c.TotalCards-1 {
+		c.CurrentCardNumber++
+		c.ID = c.ProductList[c.CurrentCardNumber].ID
+		c.Type = c.ProductList[c.CurrentCardNumber].Type
+		c.Name = c.ProductList[c.CurrentCardNumber].Name
+		c.Description = c.ProductList[c.CurrentCardNumber].Description
+		c.Price = c.ProductList[c.CurrentCardNumber].Price
+		c.Image = c.ProductList[c.CurrentCardNumber].Image
 	}
 
 }
 
 func (c *Card) GetTextTemplate() string {
-	return fmt.Sprintf("Название: %s\n\nОписание: %s\n\nЦена: %0.f рублей\n%d/%d", c.Name, c.Description, c.Price, c.CurrentCard+1, c.TotalCards)
+	return fmt.Sprintf("Название: %s\n\nОписание: %s\n\nЦена: %0.f рублей\n%d/%d", c.Name, c.Description, c.Price, c.CurrentCardNumber+1, c.TotalCards)
 }

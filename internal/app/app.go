@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
+
 
 	"github.com/Resolution-hash/shop_bot/config"
 	"github.com/Resolution-hash/shop_bot/internal/card"
@@ -40,24 +42,6 @@ func StartBot(cfg *config.Config) {
 			handleCallback(bot, update)
 		}
 
-		//keyboard := tgbotapi.NewReplyKeyboard(
-		//	tgbotapi.NewKeyboardButtonRow(
-		//		tgbotapi.NewKeyboardButton("Керамика"),
-		//		tgbotapi.NewKeyboardButton("Еще хуйня"),
-		//	),
-		//)
-		//message := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-		//message.ReplyMarkup = keyboard
-		//bot.Send(message)
-		//if update.CallbackQuery != nil {
-		//	handleCallback(update, bot)
-		//}
-		//if update.Message != nil {
-		//	log.Println("\n\n\n" + update.Message.Text)
-		//	handleCommand(update, bot)
-		//	handleCommand(update, bot)
-		//}
-
 	}
 }
 
@@ -89,7 +73,30 @@ func sendMessage(bot *tgbotapi.BotAPI, userID int, text string, keyboard interfa
 	if _, err := bot.Send(msg); err != nil {
 		log.Printf("Ошибка отправки сообщения: %s\n", err)
 	}
+}
 
+func sendCard(bot *tgbotapi.BotAPI, userID int, text string, keyboard tgbotapi.InlineKeyboardMarkup, imageName string) {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	path := cfg.ImagesUrl + "\\" + imageName + ".jpg"
+	color.Redln(path)
+	file, err := os.Open(path)
+	if err != nil {
+		fmt.Println("Error to upload file")
+	}
+	defer file.Close()
+
+	card := tgbotapi.NewPhotoUpload(int64(userID), file.Name())
+	card.File = tgbotapi.FileReader{
+		Name:   file.Name(),
+		Reader: file,
+		Size:   -1,
+	}
+	card.Caption = text
+	card.ReplyMarkup = keyboard
+	bot.Send(card)
 }
 
 func deleteMessage(bot *tgbotapi.BotAPI, messageID int, userID int) {
@@ -100,7 +107,6 @@ func deleteMessage(bot *tgbotapi.BotAPI, messageID int, userID int) {
 }
 
 func getKeyboard(value string, back interface{}) tgbotapi.InlineKeyboardMarkup {
-	fmt.Println(value)
 	switch value {
 	case "start":
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
@@ -115,25 +121,13 @@ func getKeyboard(value string, back interface{}) tgbotapi.InlineKeyboardMarkup {
 				tgbotapi.NewInlineKeyboardButtonData("Гранаты", "grenades"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Лимоны", "lemons"),
+				tgbotapi.NewInlineKeyboardButtonData("Посуда для питья", "drinkware"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Рисунки", "drawings"),
+				tgbotapi.NewInlineKeyboardButtonData("Посуда для еды", "dishware"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("Показать все", "showAllItems"),
-			),
-		)
-		return keyboard
-	case "card":
-		keyboard := tgbotapi.NewInlineKeyboardMarkup(
-			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("←", "prev"),
-				tgbotapi.NewInlineKeyboardButtonData("Добавить в корзину", "prev"),
-				tgbotapi.NewInlineKeyboardButtonData("→", "next"),
-			),
-			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Вернуться", back.(string)),
 			),
 		)
 		return keyboard
@@ -149,6 +143,53 @@ func getKeyboard(value string, back interface{}) tgbotapi.InlineKeyboardMarkup {
 		log.Println("value is not found on func getKeyboard()")
 		return keyboard
 	}
+}
+
+func getDynamicKeyboard(value string, prevStep string, quantity string) tgbotapi.InlineKeyboardMarkup {
+	switch value {
+	case "addToCart":
+		keyboard := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("←", "prev"),
+				tgbotapi.NewInlineKeyboardButtonData("→", "next"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("-", "increment"),
+				tgbotapi.NewInlineKeyboardButtonData(quantity, "no_action"),
+				tgbotapi.NewInlineKeyboardButtonData("+", "decrement"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Вернуться", prevStep),
+			),
+		)
+		return keyboard
+	case "card":
+		keyboard := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("←", "prev"),
+				tgbotapi.NewInlineKeyboardButtonData("→", "next"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Добавить в корзину", "addToCart"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Вернуться", prevStep),
+			),
+		)
+		return keyboard
+	case "back":
+		keyboard := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Вернуться назад", prevStep),
+			),
+		)
+		return keyboard
+	default:
+		keyboard := tgbotapi.NewInlineKeyboardMarkup()
+		color.Redln("value is not found on func getKeyboard()")
+		return keyboard
+	}
+
 }
 
 func getMessageText(step string) string {
@@ -194,8 +235,7 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
 		SessionManager.PrintLogs(userInfo.UserID)
 		sendMessage(bot, userInfo.UserID, "Выберите категорию: ", keyboard)
-	case "lemons":
-
+	case "drinkware":
 		db, err := setupDatabase()
 
 		if err != nil {
@@ -217,12 +257,11 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 		card := card.NewCard(products)
 		session.CardManager.UpdateInfo(data, card)
-		keyboard := getKeyboard("card", session.PrevStep)
+		keyboard := getDynamicKeyboard("card", session.PrevStep, "")
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
 		SessionManager.PrintLogs(userInfo.UserID)
-		sendMessage(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard)
-
-	case "grenades":
+		sendCard(bot, userInfo.UserID, card.GetTextTemplate(), keyboard, card.Image)
+	case "dishware":
 		db, err := setupDatabase()
 		if err != nil {
 			log.Println(err)
@@ -243,11 +282,10 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 		card := card.NewCard(products)
 		session.CardManager.UpdateInfo(data, card)
-		keyboard := getKeyboard("card", session.PrevStep)
+		keyboard := getDynamicKeyboard("card", session.PrevStep, "")
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
 		SessionManager.PrintLogs(userInfo.UserID)
-		sendMessage(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard)
-
+		sendCard(bot, userInfo.UserID, card.GetTextTemplate(), keyboard, card.Image)
 	case "drawings":
 		db, err := setupDatabase()
 		if err != nil {
@@ -272,17 +310,17 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		keyboard := getKeyboard("card", session.PrevStep)
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
 		SessionManager.PrintLogs(userInfo.UserID)
-		sendMessage(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard)
+		sendCard(bot, userInfo.UserID, card.GetTextTemplate(), keyboard, card.Image)
 	case "showAllItems":
 		db, err := setupDatabase()
 		if err != nil {
-			log.Println(err)
+			color.Redln(err)
 		}
 		service := initProductService(db)
 
 		products, err := service.GetAllProducts()
 		if err != nil {
-			log.Println(err)
+			color.Redln(err)
 		}
 
 		if repository.IsEmpty(products) {
@@ -294,31 +332,63 @@ func handleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 		card := card.NewCard(products)
 		session.CardManager.UpdateInfo(data, card)
-		keyboard := getKeyboard("card", session.PrevStep)
+		keyboard := getDynamicKeyboard("card", session.PrevStep, "")
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
 		SessionManager.PrintLogs(userInfo.UserID)
-		sendMessage(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard)
+		sendCard(bot, userInfo.UserID, card.GetTextTemplate(), keyboard, card.Image)
 	case "prev":
+		currentCard := session.CardManager.CurrentCard
 		defer func() {
 			SessionManager.PrintLogs(userInfo.UserID)
 			session.CardManager.PrintLogs()
 		}()
 		color.Blueln("prev")
-		session.CardManager.CurrentCard.Prev()
-		keyboard := getKeyboard("card", session.PrevStep)
+		currentCard.Prev()
+		keyboard := getDynamicKeyboard("card", session.PrevStep, "")
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
 
-		sendMessage(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard)
+		sendCard(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard, currentCard.Image)
 	case "next":
+		currentCard := session.CardManager.CurrentCard
 		defer func() {
 			SessionManager.PrintLogs(userInfo.UserID)
 			session.CardManager.PrintLogs()
 		}()
 		color.Blueln("next")
-		session.CardManager.CurrentCard.Next()
-		keyboard := getKeyboard("card", session.PrevStep)
+		currentCard.Next()
+		keyboard := getDynamicKeyboard("card", session.PrevStep, "")
 		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
-		sendMessage(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard)
+		sendCard(bot, userInfo.UserID, session.CardManager.CurrentCard.GetTextTemplate(), keyboard, currentCard.Image)
+	case "addToCart":
+		defer func(s *sessions.Session) {
+			s.CardManager.PrintLogs()
+			s.CartManager.PrintLogs()
+		}(session)
+		currentCard := session.CardManager.CurrentCard
+
+		db, err := setupDatabase()
+		if err != nil {
+			color.Redln(err)
+		}
+		defer db.Close()
+		repo := repository.NewSqliteCartRepo(db)
+		service := services.NewCartService(repo)
+
+		item := repository.CartItem{
+			ProductID: currentCard.ID,
+			UserID:    int64(userInfo.UserID),
+			Quantity:  1,
+		}
+
+		_, err = service.AddItem(item)
+		if err != nil {
+			color.Redln("Error to add item:", err)
+		}
+
+		session.CartManager.Add(item)
+		keyboard := getDynamicKeyboard("addToCart", session.PrevStep, session.CartManager.Quantitiy(item))
+		SessionManager.UpdateSession(userInfo.UserID, keyboard, data)
+		sendCard(bot, userInfo.UserID, currentCard.GetTextTemplate(), keyboard, currentCard.Image)
 	}
 
 }

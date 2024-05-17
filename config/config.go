@@ -12,6 +12,7 @@ var cfgPath = "C:/Users/Leoni/Documents/projects/shop_bot/config/.env"
 type Config struct {
 	TelegramAPIToken string
 	DbUrl            string
+	ImagesUrl        string
 }
 
 func LoadConfig() (*Config, error) {
@@ -25,6 +26,7 @@ func LoadConfig() (*Config, error) {
 	config := Config{
 		TelegramAPIToken: os.Getenv("BOT_TOKEN"),
 		DbUrl:            os.Getenv("DB_URL"),
+		ImagesUrl:        os.Getenv("IMAGES_URL"),
 	}
 
 	return &config, nil

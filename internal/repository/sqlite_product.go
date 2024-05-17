@@ -54,7 +54,7 @@ func (repo *SqliteProductRepo) GetAllProducts() ([]Product, error) {
 	var products []Product
 	for rows.Next() {
 		var p Product
-		err = rows.Scan(&p.ID, &p.Name, &p.Type, &p.Description, &p.Price)
+		err = rows.Scan(&p.ID, &p.Name, &p.Type, &p.Description, &p.Price, &p.Image)
 		if err != nil {
 			return []Product{}, err
 		}
@@ -74,7 +74,7 @@ func (repo *SqliteProductRepo) GetProductsByType(productType string) ([]Product,
 	var products []Product
 	for rows.Next() {
 		var p Product
-		err = rows.Scan(&p.ID, &p.Name, &p.Type, &p.Description, &p.Price)
+		err = rows.Scan(&p.ID, &p.Name, &p.Type, &p.Description, &p.Price, &p.Image)
 		if err != nil {
 			return []Product{}, err
 		}

@@ -6,14 +6,6 @@ import (
 	"github.com/Resolution-hash/shop_bot/internal/repository"
 )
 
-type Card struct {
-	Title       string
-	Description string
-	ImageURL    string
-	TotalCards  int
-	CurrentCard int
-}
-
 type ProductService struct {
 	repo repository.ProductRepo
 }

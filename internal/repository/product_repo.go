@@ -8,6 +8,7 @@ type Product struct {
 	Type        string
 	Description string
 	Price       float64
+	Image string
 }
 
 func IsEmpty(v interface{}) bool {
