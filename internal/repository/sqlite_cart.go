@@ -82,12 +82,6 @@ func (repo *SqliteCartRepo) Decrement(item CartItem) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	_, err = prepareQueryCart("decrement", "cart", item).(squirrel.UpdateBuilder).
-		RunWith(repo.Db).
-		Exec()
-	if err != nil {
-		return 0, err
-	}
 
 	var total int
 	err = prepareQueryCart("countByID", "cart", item).(squirrel.SelectBuilder).
@@ -96,6 +90,24 @@ func (repo *SqliteCartRepo) Decrement(item CartItem) (int, error) {
 	if err != nil {
 		tx.Rollback()
 		return 0, err
+	}
+
+	if total > 1 {
+		_, err = prepareQueryCart("decrement", "cart", item).(squirrel.UpdateBuilder).
+			RunWith(repo.Db).
+			Exec()
+		if err != nil {
+			return 0, err
+		}
+		total -= 1
+	} else if total == 1 {
+		_, err = prepareQueryCart("delete", "cart", item).(squirrel.DeleteBuilder).
+			RunWith(repo.Db).
+			Exec()
+		if err != nil {
+			return 0, err
+		}
+		total = 0
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -126,14 +138,13 @@ func prepareQueryCart(operation string, table string, data interface{}) squirrel
 		return squirrel.Update(table).Set("quantity", squirrel.Expr("quantity + 1")).Where(squirrel.Eq{"product_id": cartItem.ProductID, "user_id": cartItem.UserID})
 	case "decrement":
 		cartItem := data.(CartItem)
-		decrease := squirrel.Update(table).Set("quantity", squirrel.Expr("quantity - 1")).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID}).Where("quantity > 1")
-		delete := squirrel.Delete(table).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID}).Where("quantity = 1")
-		return squirrel.Case().When(squirrel.Expr("quantity > 1"), decrease).Else(delete)
+		return squirrel.Update(table).Set("quantity", squirrel.Expr("quantity - 1")).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID}).Where("quantity > 1")
 	case "countByID":
 		cartItem := data.(CartItem)
 		return squirrel.Select("SUM(quantity) as total_quantity").From(table).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID})
 	case "delete":
-		return squirrel.Delete(table).Where(squirrel.Eq{"id": data.(int64)})
+		cartItem := data.(CartItem)
+		return squirrel.Delete(table).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID})
 	default:
 		return nil
 	}

@@ -6,22 +6,19 @@ import (
 
 	"github.com/Resolution-hash/shop_bot/internal/card"
 	"github.com/Resolution-hash/shop_bot/internal/repository"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/gookit/color"
 )
 
 type Session struct {
-	User        *UserInfo
-	CardManager *card.CardManager
-	CartManager *repository.Cart
-	Keyboard    tgbotapi.InlineKeyboardMarkup
-	CurrentStep string
-	PrevStep    string
+	User              *UserInfo
+	LastUserMessageID int
+	LastBotMessageID  int
+	CardManager       *card.CardManager
+	CartManager       *repository.Cart
 }
 
 type UserInfo struct {
 	UserID     int
-	MessageID  int
 	First_name string
 	Last_name  string
 	User_name  string
@@ -38,40 +35,18 @@ func NewSessionManager() *SessionManager {
 	}
 }
 
-func (sm *SessionManager) CreateSession(userInfo *UserInfo, keyboard tgbotapi.InlineKeyboardMarkup, currStep string, prevStep string) {
+func (sm *SessionManager) CreateSession(userInfo *UserInfo) *Session {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 	sm.sessions[userInfo.UserID] = &Session{
-		User:        userInfo,
-		CardManager: card.NewCardManager(),
-		CartManager: repository.NewCart(),
-		Keyboard:    keyboard,
-		CurrentStep: currStep,
-		PrevStep:    prevStep,
+		User:              userInfo,
+		LastUserMessageID: 0,
+		LastBotMessageID:  0,
+		CardManager:       card.NewCardManager(),
+		CartManager:       repository.NewCart(),
+		// Keyboard:    keyboard,
 	}
-}
-
-func (sm *SessionManager) UpdateSession(userID int, keyboard tgbotapi.InlineKeyboardMarkup, newStep string) {
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-	session := sm.sessions[userID]
-	session.Keyboard = keyboard
-	if newStep != "prev" && newStep != "next" && newStep != "addToCart" && newStep != "increment" && newStep != "decrement" {
-		session.PrevStep = session.CurrentStep
-		session.CurrentStep = newStep
-	}
-
-}
-
-func (sm *SessionManager) UpdateStep(userID int, newStep string) {
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-	session := sm.sessions[userID]
-	if newStep != "prev" && newStep != "next" {
-		session.PrevStep = session.CurrentStep
-		session.CurrentStep = newStep
-	}
-
+	return sm.sessions[userInfo.UserID]
 }
 
 func (sm *SessionManager) GetSession(userID int) (*Session, bool) {
@@ -85,14 +60,13 @@ func (sm *SessionManager) PrintLogs(userID int) {
 	s := sm.sessions[userID]
 	fmt.Print("___________________\n\n")
 	color.Yellowln("UserID:", s.User.UserID)
-	color.Yellowln("MessageID:", s.User.MessageID)
 	color.Yellowln("First_name:", s.User.First_name)
 	color.Yellowln("Last_name:", s.User.Last_name)
 	color.Yellowln("User_name:", s.User.User_name)
+	color.Yellowln("LastUserMessageID:", s.LastUserMessageID)
+	color.Yellowln("LastBotMessageID:", s.LastBotMessageID)
 	color.Yellowln("CardManager:", s.CardManager)
 	color.Yellowln("Cart:", s.CartManager)
-	color.Yellowln("Current step:", s.CurrentStep)
-	color.Yellowln("Previous step:", s.PrevStep)
 	fmt.Print("___________________\n\n")
 
 }
