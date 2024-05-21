@@ -52,11 +52,12 @@ func formatCartText(items []*repository.CartProduct) string {
 
 	for i, item := range items {
 		itemTotal := item.Price * float64(item.Quantity)
-		sb.WriteString(fmt.Sprintf("%d. %s. %dшт. Цена за 1шт:%0.fруб.", i, item.Name, item.Quantity, item.Price))
+		sb.WriteString(fmt.Sprintf("<b>%d</b>.%s\n   Количество: %dшт\n   Цена за 1 шт: <i>%0.fруб</i>.\n", i+1, item.Name, item.Quantity, item.Price))
+		sb.WriteString(fmt.Sprint("  ----------------------\n"))
 		totalPrice += itemTotal
 	}
 
-	sb.WriteString(fmt.Sprintf("\nИтог: %0.f", totalPrice))
+	sb.WriteString(fmt.Sprintf("\n💰 Итог: %0.fруб.", totalPrice))
 
 	return sb.String()
 }

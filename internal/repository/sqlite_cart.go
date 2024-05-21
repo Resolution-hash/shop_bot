@@ -23,7 +23,7 @@ func (repo *SqliteCartRepo) AddItem(item CartItem) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	_, err = prepareQueryCart("addItem", "cart", item).(squirrel.InsertBuilder).
+	_, err = prepareQueryProductCart("addItem", "cart", item).(squirrel.InsertBuilder).
 		RunWith(repo.Db).
 		Exec()
 	if err != nil {
@@ -32,7 +32,7 @@ func (repo *SqliteCartRepo) AddItem(item CartItem) (int, error) {
 	}
 
 	var total int
-	err = prepareQueryCart("countByID", "cart", item).(squirrel.SelectBuilder).
+	err = prepareQueryProductCart("countByID", "cart", item).(squirrel.SelectBuilder).
 		RunWith(repo.Db).
 		QueryRow().Scan(&total)
 	if err != nil {
@@ -54,7 +54,7 @@ func (repo *SqliteCartRepo) Increment(item CartItem) (int, error) {
 	}
 	color.Redln("productID:", item.ProductID, "UserID:", item.UserID)
 
-	_, err = prepareQueryCart("increment", "cart", item).(squirrel.UpdateBuilder).
+	_, err = prepareQueryProductCart("increment", "cart", item).(squirrel.UpdateBuilder).
 		RunWith(repo.Db).
 		Exec()
 	if err != nil {
@@ -63,7 +63,7 @@ func (repo *SqliteCartRepo) Increment(item CartItem) (int, error) {
 	}
 
 	var total int
-	err = prepareQueryCart("countByID", "cart", item).(squirrel.SelectBuilder).
+	err = prepareQueryProductCart("countByID", "cart", item).(squirrel.SelectBuilder).
 		RunWith(repo.Db).
 		QueryRow().Scan(&total)
 	if err != nil {
@@ -80,7 +80,7 @@ func (repo *SqliteCartRepo) Increment(item CartItem) (int, error) {
 
 func (repo *SqliteCartRepo) Decrement(item CartItem) (int, error) {
 	var total int
-	err := prepareQueryCart("countByID", "cart", item).(squirrel.SelectBuilder).
+	err := prepareQueryProductCart("countByID", "cart", item).(squirrel.SelectBuilder).
 		RunWith(repo.Db).
 		QueryRow().Scan(&total)
 	if err != nil {
@@ -88,7 +88,7 @@ func (repo *SqliteCartRepo) Decrement(item CartItem) (int, error) {
 	}
 
 	if total > 1 {
-		_, err = prepareQueryCart("decrement", "cart", item).(squirrel.UpdateBuilder).
+		_, err = prepareQueryProductCart("decrement", "cart", item).(squirrel.UpdateBuilder).
 			RunWith(repo.Db).
 			Exec()
 		if err != nil {
@@ -96,7 +96,7 @@ func (repo *SqliteCartRepo) Decrement(item CartItem) (int, error) {
 		}
 		total -= 1
 	} else if total == 1 {
-		_, err = prepareQueryCart("delete", "cart", item).(squirrel.DeleteBuilder).
+		_, err = prepareQueryProductCart("delete", "cart", item).(squirrel.DeleteBuilder).
 			RunWith(repo.Db).
 			Exec()
 		if err != nil {
@@ -112,7 +112,7 @@ func (repo *SqliteCartRepo) GetItemsByUserID(userID int64) ([]*CartProduct, erro
 
 	items := make([]*CartItem, 0)
 
-	rows, err := prepareQuery("selectByID", "cart", userID).(squirrel.SelectBuilder).
+	rows, err := prepareQueryProductCart("selectByID", "cart", userID).(squirrel.SelectBuilder).
 		RunWith(repo.Db).
 		Query()
 	if err != nil {
@@ -132,7 +132,7 @@ func (repo *SqliteCartRepo) GetItemsByUserID(userID int64) ([]*CartProduct, erro
 		productIDs = append(productIDs, item.ProductID)
 	}
 
-	rows, err = prepareQuery("selectById", "products", productIDs).(squirrel.SelectBuilder).
+	rows, err = prepareQueryProduct("selectByIDs", "products", productIDs).(squirrel.SelectBuilder).
 		RunWith(repo.Db).
 		Query()
 
@@ -175,7 +175,7 @@ func (repo *SqliteCartRepo) GetItemsByUserID(userID int64) ([]*CartProduct, erro
 // RemoveItem(int64) error
 // GetItemsByID(int64) ([]CartItem, error)
 
-func prepareQueryCart(operation string, table string, data interface{}) squirrel.Sqlizer {
+func prepareQueryProductCart(operation string, table string, data interface{}) squirrel.Sqlizer {
 	switch operation {
 	case "addItem":
 		cartItem := (data).(CartItem)
@@ -185,7 +185,7 @@ func prepareQueryCart(operation string, table string, data interface{}) squirrel
 			"quantity":   cartItem.Quantity,
 		}
 		return squirrel.Insert(table).SetMap(insertMap)
-	case "GetItemsByID":
+	case "selectByID":
 		return squirrel.Select("product_id, quantity").From(table).Where(squirrel.Eq{"user_id": data.(int64)})
 	case "increment":
 		cartItem := data.(CartItem)

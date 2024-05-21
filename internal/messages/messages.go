@@ -21,6 +21,7 @@ func SendMessage(bot *tgbotapi.BotAPI, userID int, text string, keyboard interfa
 			msg.ReplyMarkup = k
 		}
 	}
+	msg.ParseMode = "HTML"
 	sentMsg, err := bot.Send(msg)
 	if err != nil {
 		log.Printf("Ошибка отправки сообщения: %s\n", err)
@@ -121,7 +122,7 @@ func GetKeyboard(value string, back interface{}) tgbotapi.InlineKeyboardMarkup {
 			),
 		)
 		return keyboard
-	case "Корзина":
+	case "buttonForCart":
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("Изменить корзину⬅️", back.(string)),

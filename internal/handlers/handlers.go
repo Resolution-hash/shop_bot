@@ -44,13 +44,40 @@ func HandleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		keyboard = messages.GetReplyKeyboard()
 		messageText = messages.GetMessageText("start")
 		messages.SendReplyKeyboard(bot, userInfo.UserID, messageText, keyboard)
-	case "Магазин":
-		keyboard = messages.GetReplyKeyboard()
-		messages.SendReplyKeyboard(bot, userInfo.UserID, "", keyboard)
+	case "Корзина":
 
-		inlineKeyboard = messages.GetKeyboard(data, nil)
-		messageText = "Выберите категорию: "
-		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
+		db, err := setupDatabase()
+		if err != nil {
+			color.Redln(err)
+		}
+		defer db.Close()
+
+		repo := repository.NewSqliteCartRepo(db)
+		service := services.NewCartService(repo)
+
+		// if repository.IsEmpty(items) {
+		// 	color.Redln("userID:", userInfo.UserID, " Корзина пуста", err)
+		// 	inlineKeyboard = messages.GetKeyboard("back", "Магазин")
+		// 	messageText = "Корзина пуста"
+		// 	botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
+		// 	session.LastBotMessageID = botMessageID
+		// 	return
+		// }
+
+		messageText, err = service.GetCartText(int64(userInfo.UserID))
+		if err != nil {
+			color.Redln("userID:", userInfo.UserID, "Error:", err)
+			inlineKeyboard = messages.GetKeyboard("back", "Магазин")
+			messageText = "Произошла ошибка загрузки. Пожалуйста, попробуйте позже"
+			botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
+			session.LastBotMessageID = botMessageID
+			return
+		}
+
+		inlineKeyboard = messages.GetKeyboard("Корзина", "Магазин")
+		botMessageID := messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
+		session.LastBotMessageID = botMessageID
+
 	default:
 		keyboard = messages.GetReplyKeyboard()
 		messageText = messages.GetMessageText("start")
@@ -88,41 +115,6 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		inlineKeyboard = messages.GetKeyboard(data, nil)
 		messageText = "Выберите категорию: "
 
-		botMessageID := messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-		session.LastBotMessageID = botMessageID
-	case "Корзина":
-		inlineKeyboard = messages.GetKeyboard(data, nil)
-		messageText = "Выберите категорию: "
-
-		db, err := setupDatabase()
-		if err != nil {
-			color.Redln(err)
-		}
-		defer db.Close()
-
-		repo := repository.NewSqliteCartRepo(db)
-		service := services.NewCartService(repo)
-
-		// if repository.IsEmpty(items) {
-		// 	color.Redln("userID:", userInfo.UserID, " Корзина пуста", err)
-		// 	inlineKeyboard = messages.GetKeyboard("back", "Магазин")
-		// 	messageText = "Корзина пуста"
-		// 	botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-		// 	session.LastBotMessageID = botMessageID
-		// 	return
-		// }
-
-		messageText, err = service.GetCartText(int64(userInfo.UserID))
-		if err != nil {
-			color.Redln("userID:", userInfo.UserID, "Error:", err)
-			inlineKeyboard = messages.GetKeyboard("back", "Магазин")
-			messageText = "Произошла ошибка загрузки. Пожалуйста, попробуйте позже"
-			botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-			session.LastBotMessageID = botMessageID
-			return
-		}
-
-		inlineKeyboard = messages.GetKeyboard("Корзина", "Магазин")
 		botMessageID := messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
 		session.LastBotMessageID = botMessageID
 	case "drinkware":
