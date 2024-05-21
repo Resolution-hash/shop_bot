@@ -99,6 +99,8 @@ func prepareQuery(operation string, table string, data interface{}) squirrel.Sql
 		return squirrel.Select("*").From(table)
 	case "selectByType":
 		return squirrel.Select("*").From(table).Where(squirrel.Eq{"type": data.(string)})
+	case "selectByIDs":
+		return squirrel.Select("*").From(table).Where(squirrel.Eq{"id": data.([]int64)})
 	case "update":
 		product := (data).(Product)
 		updateMap := map[string]interface{}{

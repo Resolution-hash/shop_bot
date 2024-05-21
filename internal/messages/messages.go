@@ -121,6 +121,19 @@ func GetKeyboard(value string, back interface{}) tgbotapi.InlineKeyboardMarkup {
 			),
 		)
 		return keyboard
+	case "Корзина":
+		keyboard := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Изменить корзину⬅️", back.(string)),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Оформить заказ ⬅️", back.(string)),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Вернуться ⬅️", back.(string)),
+			),
+		)
+		return keyboard
 	case "back":
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(

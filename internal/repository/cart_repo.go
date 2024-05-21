@@ -13,6 +13,14 @@ type CartItem struct {
 	Quantity  int
 }
 
+type CartProduct struct {
+	ProductID   int
+	Name        string
+	Description string
+	Price       float64
+	Quantity    int
+}
+
 type Cart struct {
 	Items map[int64]int
 }
@@ -48,5 +56,5 @@ type CartRepo interface {
 	Increment(CartItem) (int, error)
 	Decrement(CartItem) (int, error)
 	// RemoveItem(int64) error
-	// GetItemsByID(int64) ([]CartItem, error)
+	GetItemsByUserID(int64) ([]*CartProduct, error)
 }
