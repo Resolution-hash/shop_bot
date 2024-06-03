@@ -17,6 +17,18 @@ func NewSqliteCartRepo(db *sql.DB) *SqliteCartRepo {
 		Db: db,
 	}
 }
+
+func (repo *SqliteCartRepo) GetQuantityByItemID(item CartItem) (int, error) {
+	var total int
+	err := prepareQueryProductCart("countByID", "cart", item).(squirrel.SelectBuilder).
+		RunWith(repo.Db).
+		QueryRow().Scan(&total)
+	if err != nil {
+		return 0, err
+	}
+	return total, nil
+}
+
 func (repo *SqliteCartRepo) AddItem(item CartItem) (int, error) {
 
 	tx, err := repo.Db.Begin()
@@ -165,6 +177,7 @@ func (repo *SqliteCartRepo) GetItemsByUserID(userID int64) ([]*CartProduct, erro
 			Description: product.Description,
 			Price:       product.Price,
 			Quantity:    item.Quantity,
+			Image:       product.Image,
 		}
 
 	}
@@ -173,7 +186,6 @@ func (repo *SqliteCartRepo) GetItemsByUserID(userID int64) ([]*CartProduct, erro
 }
 
 // RemoveItem(int64) error
-// GetItemsByID(int64) ([]CartItem, error)
 
 func prepareQueryProductCart(operation string, table string, data interface{}) squirrel.Sqlizer {
 	switch operation {

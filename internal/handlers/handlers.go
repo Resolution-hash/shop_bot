@@ -1,15 +1,10 @@
 package handlers
 
 import (
-	"database/sql"
-	"fmt"
-	"log"
-
-	"github.com/Resolution-hash/shop_bot/config"
-	"github.com/Resolution-hash/shop_bot/internal/card"
 	"github.com/Resolution-hash/shop_bot/internal/messages"
 	"github.com/Resolution-hash/shop_bot/internal/repository"
-	"github.com/Resolution-hash/shop_bot/internal/services"
+
+	// "github.com/Resolution-hash/shop_bot/internal/services"
 	"github.com/Resolution-hash/shop_bot/internal/sessions"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/gookit/color"
@@ -29,21 +24,6 @@ func HandleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	session.LastUserMessageID = userMessageID
 	deleteMessages(bot, *session, userInfo.UserID)
 
-	// color.Redln("LastUserMessageID", session.LastUserMessageID)
-	// color.Redln("LastBotMessageID", session.LastBotMessageID)
-
-	// if session.LastUserMessageID != 0 {
-	// 	color.Redln("delete user message", session.LastUserMessageID)
-	// 	messages.DeleteMessage(bot, session.LastUserMessageID, userInfo.UserID)
-	// 	session.LastUserMessageID = 0
-	// }
-	// if session.LastBotMessageID != 0 {
-	// 	color.Redln("delete bot message", session.LastBotMessageID)
-
-	// 	messages.DeleteMessage(bot, session.LastBotMessageID, userInfo.UserID)
-	// 	session.LastBotMessageID = 0
-	// }
-
 	var keyboard tgbotapi.ReplyKeyboardMarkup
 	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
 	var botMessageID int
@@ -58,28 +38,22 @@ func HandleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		session.LastBotMessageID = botMessageID
 
 	case "Магазин":
-		// keyboard = messages.GetReplyKeyboard()
-		// _ = messages.SendReplyKeyboard(bot, userInfo.UserID, " ", keyboard)
 
-		// botMessageID = messages.EditMessage(bot, userInfo.UserID, session.LastBotMessageID, messageText)
-		// session.LastBotMessageID = botMessageID
 		inlineKeyboard = messages.GetKeyboard(data, nil)
 		messageText = "Выберите категорию: "
 		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
 		session.LastBotMessageID = botMessageID
 
 	case "Корзина":
-		// keyboard = messages.GetReplyKeyboard()
-		// messages.SendReplyKeyboard(bot, userInfo.UserID, " ", keyboard)
 
-		db, err := setupDatabase()
-		if err != nil {
-			color.Redln(err)
-		}
-		defer db.Close()
+		// db, err := setupDatabase()
+		// if err != nil {
+		// 	color.Redln(err)
+		// }
+		// defer db.Close()
 
-		repo := repository.NewSqliteCartRepo(db)
-		service := services.NewCartService(repo)
+		// repo := repository.NewSqliteCartRepo(db)
+		// service := services.NewCartService(repo)
 
 		// if repository.IsEmpty(items) {
 		// 	color.Redln("userID:", userInfo.UserID, " Корзина пуста", err)
@@ -90,15 +64,15 @@ func HandleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		// 	return
 		// }
 
-		messageText, err = service.GetCartText(int64(userInfo.UserID))
-		if err != nil {
-			color.Redln("userID:", userInfo.UserID, "Error:", err)
-			inlineKeyboard = messages.GetKeyboard("back", "Магазин")
-			messageText = "Произошла ошибка загрузки. Пожалуйста, попробуйте позже"
-			botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-			session.LastBotMessageID = botMessageID
-			return
-		}
+		// messageText, err := service.GetCartInfo(int64(userInfo.UserID))
+		// if err != nil {
+		// 	color.Redln("userID:", userInfo.UserID, "Error:", err)
+		// 	inlineKeyboard = messages.GetKeyboard("back", "Магазин")
+		// 	messageText = "Произошла ошибка загрузки. Пожалуйста, попробуйте позже"
+		// 	botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
+		// 	session.LastBotMessageID = botMessageID
+		// 	return
+		// }
 
 		inlineKeyboard = messages.GetKeyboard("buttonForCart", "Магазин")
 		botMessageID := messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
@@ -126,25 +100,8 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	}
 	session.LastUserMessageID = callbackMessageID
 	deleteMessages(bot, *session, userInfo.UserID)
-	// deleteMessages(bot, *session, userInfo.UserID)
-	// color.Redln("LastUserMessageID", session.LastUserMessageID)
-	// color.Redln("LastBotMessageID", session.LastBotMessageID)
-
-	// if session.LastUserMessageID != 0 {
-	// 	color.Redln("delete user message", session.LastUserMessageID)
-
-	// 	messages.DeleteMessage(bot, session.LastUserMessageID, userInfo.UserID)
-	// 	session.LastUserMessageID = 0
-	// }
-	// if session.LastBotMessageID != 0 {
-	// 	color.Redln("delete bot message", session.LastBotMessageID)
-
-	// 	messages.DeleteMessage(bot, session.LastBotMessageID, userInfo.UserID)
-	// 	session.LastBotMessageID = 0
-	// }
 
 	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
-	// var keyboard tgbotapi.ReplyKeyboardMarkup
 	var messageText string
 	var botMessageID int
 	switch data {
@@ -155,140 +112,100 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		botMessageID := messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
 		session.LastBotMessageID = botMessageID
 	case "drinkware":
-		db, err := setupDatabase()
+		err := session.CardManager.GetCardByType(data)
 		if err != nil {
-			log.Println(err)
+			color.Redln(err)
 		}
-		defer db.Close()
-
-		service := initProductService(db)
-
-		products, err := service.GetProductByType(data)
-		if err != nil {
-			log.Println(err)
-		}
-
-		if repository.IsEmpty(products) {
-			keyboard := messages.GetKeyboard("back", "Магазин")
-			messages.SendMessage(bot, userInfo.UserID, "Товаров нет.", keyboard)
-			return
-		}
-
-		card := card.NewCard(products)
-		session.CardManager.UpdateInfo(data, card)
 
 		inlineKeyboard := messages.GetDynamicKeyboard("card", session)
-		messageText = card.GetTextTemplate()
+		messageText = session.CardManager.GetCardText()
+		cardImage := session.CardManager.GetCardImage()
 
-		// keyboard = messages.GetReplyKeyboard()
-		// messages.SendReplyKeyboard(bot, userInfo.UserID, " ", keyboard)
-
-		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, inlineKeyboard, card.Image)
+		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
 		session.LastBotMessageID = botMessageID
 	case "dishware":
-		db, err := setupDatabase()
+
+		err := session.CardManager.GetCardByType(data)
 		if err != nil {
-			log.Println(err)
+			color.Redln(err)
 		}
-		defer db.Close()
-
-		service := initProductService(db)
-
-		products, err := service.GetProductByType(data)
-		if err != nil {
-			log.Println(err)
-		}
-
-		if repository.IsEmpty(products) {
-			keyboard := messages.GetKeyboard("back", "Магазин")
-			messages.SendMessage(bot, userInfo.UserID, "Товаров нет", keyboard)
-			return
-		}
-
-		card := card.NewCard(products)
-		session.CardManager.UpdateInfo(data, card)
 
 		inlineKeyboard := messages.GetDynamicKeyboard("card", session)
-		messageText = card.GetTextTemplate()
+		messageText = session.CardManager.GetCardText()
+		cardImage := session.CardManager.GetCardImage()
 
-		// keyboard = messages.GetReplyKeyboard()
-		// messages.SendReplyKeyboard(bot, userInfo.UserID, " ", keyboard)
-
-		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, inlineKeyboard, card.Image)
+		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
 		session.LastBotMessageID = botMessageID
 	case "drawings":
-		db, err := setupDatabase()
+		err := session.CardManager.GetCardByType(data)
 		if err != nil {
-			log.Println(err)
+			color.Redln(err)
 		}
-		service := initProductService(db)
-
-		products, err := service.GetProductByType(data)
-		if err != nil {
-			log.Println(err)
-		}
-
-		if repository.IsEmpty(products) {
-			keyboard := messages.GetKeyboard("back", "Магазин")
-			messages.SendMessage(bot, userInfo.UserID, "Товаров нет", keyboard)
-			return
-		}
-
-		card := card.NewCard(products)
-		session.CardManager.UpdateInfo(data, card)
 
 		inlineKeyboard := messages.GetDynamicKeyboard("card", session)
-		messageText = card.GetTextTemplate()
+		messageText = session.CardManager.GetCardText()
+		cardImage := session.CardManager.GetCardImage()
 
-		// keyboard = messages.GetReplyKeyboard()
-		// messages.SendReplyKeyboard(bot, userInfo.UserID, " ", keyboard)
-
-		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, inlineKeyboard, card.Image)
+		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
 		session.LastBotMessageID = botMessageID
 	case "showAllItems":
-		db, err := setupDatabase()
+		err := session.CardManager.GetCardAll(data)
 		if err != nil {
 			color.Redln(err)
 		}
-		service := initProductService(db)
-
-		products, err := service.GetAllProducts()
-		if err != nil {
-			color.Redln(err)
-		}
-
-		if repository.IsEmpty(products) {
-			keyboard := messages.GetKeyboard("back", "Магазин")
-			messages.SendMessage(bot, userInfo.UserID, "Товаров нет", keyboard)
-			return
-		}
-
-		card := card.NewCard(products)
-		session.CardManager.UpdateInfo(data, card)
 
 		inlineKeyboard := messages.GetDynamicKeyboard("card", session)
-		messageText = card.GetTextTemplate()
+		messageText = session.CardManager.GetCardText()
+		cardImage := session.CardManager.GetCardImage()
 
-		// keyboard = messages.GetReplyKeyboard()
-		// messages.SendReplyKeyboard(bot, userInfo.UserID, " ", keyboard)
-
-		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, inlineKeyboard, card.Image)
+		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
 		session.LastBotMessageID = botMessageID
+	// case "changeCart":
+	// 	db, err := setupDatabase()
+	// 	if err != nil {
+	// 		color.Redln(err)
+	// 	}
+	// 	defer db.Close()
+
+	// 	repo := repository.NewSqliteCartRepo(db)
+	// 	service := services.NewCartService(repo)
+
+	// 	cartProducts, err := service.GetItemsByUserID(int64(userInfo.UserID))
+	// 	if err != nil {
+	// 		keyboard := messages.GetKeyboard("back", "Магазин")
+	// 		messages.SendMessage(bot, userInfo.UserID, "Ошибка загрузки корзины. Пожалуйста, попробуйте позже", keyboard)
+	// 		return
+	// 	}
+
+	// 	if repository.IsEmpty(cartProducts) {
+	// 		keyboard := messages.GetKeyboard("back", "Магазин")
+	// 		messages.SendMessage(bot, userInfo.UserID, "Корзина пуста", keyboard)
+	// 		return
+	// 	}
+
+	// 	card := card.NewCardProductCart(cartProducts)
+	// 	session.CardManager.UpdateInfoCart(data, card)
+
+	// 	inlineKeyboard := messages.GetCartKeyboard(session)
+	// 	messageText = card.GetTextTemplate()
+
+	// 	botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, inlineKeyboard, card.Image)
+	// 	session.LastBotMessageID = botMessageID
+
 	case "prev":
 		defer func(s *sessions.Session) {
 			s.CardManager.PrintLogs()
 			s.CartManager.PrintLogs()
 		}(session)
 
-		currentCard := session.CardManager.CurrentCard
-
 		color.Blueln("prev")
-		currentCard.Prev()
+		session.CardManager.PrevCard()
 
 		keyboard := messages.GetDynamicKeyboard("card", session)
-		messageText = currentCard.GetTextTemplate()
+		messageText = session.CardManager.GetCardText()
+		cardImage := session.CardManager.GetCardImage()
 
-		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, currentCard.Image)
+		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, cardImage)
 		session.LastBotMessageID = botMessageID
 	case "next":
 		defer func(s *sessions.Session) {
@@ -296,31 +213,55 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			s.CartManager.PrintLogs()
 		}(session)
 
-		currentCard := session.CardManager.CurrentCard
-
 		color.Blueln("next")
-		currentCard.Next()
+		session.CardManager.NextCard()
 
 		keyboard := messages.GetDynamicKeyboard("card", session)
+		messageText = session.CardManager.GetCardText()
+		cardImage := session.CardManager.GetCardImage()
+
+		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, cardImage)
+		session.LastBotMessageID = botMessageID
+	case "prevProductCart":
+		// defer func(s *sessions.Session) {
+		// 	s.CardManager.PrintLogs()
+		// 	s.CartManager.PrintLogs()
+		// }(session)
+
+		currentCard := session.CardManager.CurrentProductCart
+
+		color.Blueln("prevProductCart")
+		currentCard.Prev()
+
+		keyboard := messages.GetCartKeyboard(session)
 		messageText = currentCard.GetTextTemplate()
 
 		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, currentCard.Image)
 		session.LastBotMessageID = botMessageID
+	case "nextProductCart":
+		// defer func(s *sessions.Session) {
+		// 	s.CardManager.PrintLogs()
+		// 	s.CartManager.PrintLogs()
+		// }(session)
+
+		currentCard := session.CardManager.CurrentProductCart
+
+		color.Blueln("nextProductCart")
+		currentCard.Next()
+
+		keyboard := messages.GetCartKeyboard(session)
+		messageText = currentCard.GetTextTemplate()
+
+		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, currentCard.Image)
+		session.LastBotMessageID = botMessageID
+
 	case "addToCart":
 		defer func(s *sessions.Session) {
 			s.CardManager.PrintLogs()
-			s.CartManager.PrintLogs()
+			// s.CartManager.PrintLogs()
 		}(session)
 
 		currentCard := session.CardManager.CurrentCard
-
-		db, err := setupDatabase()
-		if err != nil {
-			color.Redln(err)
-		}
-		defer db.Close()
-		repo := repository.NewSqliteCartRepo(db)
-		service := services.NewCartService(repo)
 
 		item := repository.CartItem{
 			ProductID: currentCard.ID,
@@ -328,17 +269,16 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			Quantity:  1,
 		}
 
-		total, err := service.AddItem(item)
+		err := session.CartManager.AddToCart(item)
 		if err != nil {
-			color.Redln("Error to add item:", err)
+			color.Redln(err)
 		}
-		color.Redln("total in db:", total)
 
-		session.CartManager.Add(item)
 		keyboard := messages.GetDynamicKeyboard("addToCart", session)
-		messageText = currentCard.GetTextTemplate()
+		messageText = session.CardManager.GetCardText()
+		cardImage := session.CardManager.GetCardImage()
 
-		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, currentCard.Image)
+		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, cardImage)
 		session.LastBotMessageID = botMessageID
 	case "increment":
 		defer func(s *sessions.Session) {
@@ -348,29 +288,40 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 		currentCard := session.CardManager.CurrentCard
 
-		db, err := setupDatabase()
-		if err != nil {
-			color.Redln(err)
-		}
-		defer db.Close()
-
-		repo := repository.NewSqliteCartRepo(db)
-		service := services.NewCartService(repo)
-
 		item := repository.CartItem{
 			ProductID: currentCard.ID,
 			UserID:    int64(userInfo.UserID),
 		}
 
-		total, err := service.Increment(item)
+		err := session.CartManager.Increment(item)
 		if err != nil {
-			color.Redln("Error to increment item:", err)
+			color.Redln(err)
 		}
-		session.CartManager.UpdateQuantity(currentCard.ID, total)
-		keyboard := messages.GetDynamicKeyboard("addToCart", session)
-		messageText = currentCard.GetTextTemplate()
 
-		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, currentCard.Image)
+		// db, err := setupDatabase()
+		// if err != nil {
+		// 	color.Redln(err)
+		// }
+		// defer db.Close()
+
+		// repo := repository.NewSqliteCartRepo(db)
+		// service := services.NewCartService(repo)
+
+		// item := repository.CartItem{
+		// 	ProductID: currentCard.ID,
+		// 	UserID:    int64(userInfo.UserID),
+		// }
+
+		// total, err := service.Increment(item)
+		// if err != nil {
+		// 	color.Redln("Error to increment item:", err)
+		// }
+		// session.CartManager.UpdateQuantity(currentCard.ID, total)
+		keyboard := messages.GetDynamicKeyboard("addToCart", session)
+		messageText = session.CardManager.GetCardText()
+		cardImage := session.CardManager.GetCardImage()
+
+		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, cardImage)
 		session.LastBotMessageID = botMessageID
 	case "decrement":
 		defer func(s *sessions.Session) {
@@ -380,36 +331,112 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 		currentCard := session.CardManager.CurrentCard
 
-		db, err := setupDatabase()
-		if err != nil {
-			color.Redln(err)
-		}
-		defer db.Close()
-
-		repo := repository.NewSqliteCartRepo(db)
-		service := services.NewCartService(repo)
-
 		item := repository.CartItem{
 			ProductID: currentCard.ID,
 			UserID:    int64(userInfo.UserID),
 		}
 
-		total, err := service.Decrement(item)
+		err := session.CartManager.Decrement(item)
 		if err != nil {
-			color.Redln("Error to increment item:", err)
+			color.Redln(err)
 		}
-		color.Redln("Total increment func:", total)
 
-		session.CartManager.UpdateQuantity(currentCard.ID, total)
+		// db, err := setupDatabase()
+		// if err != nil {
+		// 	color.Redln(err)
+		// }
+		// defer db.Close()
+
+		// repo := repository.NewSqliteCartRepo(db)
+		// service := services.NewCartService(repo)
+
+		// item := repository.CartItem{
+		// 	ProductID: currentCard.ID,
+		// 	UserID:    int64(userInfo.UserID),
+		// }
+
+		// total, err := service.Decrement(item)
+		// if err != nil {
+		// 	color.Redln("Error to increment item:", err)
+		// }
+		// color.Redln("Total increment func:", total)
+
+		// session.CartManager.UpdateQuantity(currentCard.ID, total)
 		keyboard := messages.GetDynamicKeyboard("addToCart", session)
-		messageText = currentCard.GetTextTemplate()
+		messageText = session.CardManager.GetCardText()
+		cardImage := session.CardManager.GetCardImage()
 
-		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, currentCard.Image)
+		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, cardImage)
 		session.LastBotMessageID = botMessageID
+	case "incrementProductCart":
+		// defer func(s *sessions.Session) {
+		// 	s.CardManager.PrintLogs()
+		// 	s.CartManager.PrintLogs()
+		// }(session)
+
+		// currentCard := session.CardManager.CurrentProductCart
+
+		// db, err := setupDatabase()
+		// if err != nil {
+		// 	color.Redln(err)
+		// }
+		// defer db.Close()
+
+		// repo := repository.NewSqliteCartRepo(db)
+		// service := services.NewCartService(repo)
+
+		// item := repository.CartItem{
+		// 	ProductID: int64(currentCard.ID),
+		// 	UserID:    int64(userInfo.UserID),
+		// }
+
+		// total, err := service.Increment(item)
+		// if err != nil {
+		// 	color.Redln("Error to increment item:", err)
+		// }
+		// session.CartManager.UpdateQuantity(int64(currentCard.ID), total)
+		// keyboard := messages.GetCartKeyboard(session)
+		// messageText = currentCard.GetTextTemplate()
+
+		// botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, currentCard.Image)
+		session.LastBotMessageID = botMessageID
+		// case "decrementProductCart":
+		// 	// defer func(s *sessions.Session) {
+		// 	// 	s.CardManager.PrintLogs()
+		// 	// 	s.CartManager.PrintLogs()
+		// 	// }(session)
+
+		// 	currentCard := session.CardManager.CurrentProductCart
+
+		// 	db, err := setupDatabase()
+		// 	if err != nil {
+		// 		color.Redln(err)
+		// 	}
+		// 	defer db.Close()
+
+		// 	repo := repository.NewSqliteCartRepo(db)
+		// 	service := services.NewCartService(repo)
+
+		// 	item := repository.CartItem{
+		// 		ProductID: int64(currentCard.ID),
+		// 		UserID:    int64(userInfo.UserID),
+		// 	}
+
+		// 	total, err := service.Decrement(item)
+		// 	if err != nil {
+		// 		color.Redln("Error to increment item:", err)
+		// 	}
+		// 	color.Redln("Total increment func:", total)
+
+		// 	session.CartManager.UpdateQuantity(int64(currentCard.ID), total)
+		// 	keyboard := messages.GetCartKeyboard(session)
+		// 	messageText = currentCard.GetTextTemplate()
+
+		// 	botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, currentCard.Image)
+		// 	session.LastBotMessageID = botMessageID
 	}
 
 	SessionManager.PrintLogs(userInfo.UserID)
-
 }
 
 func getUserInfo(update tgbotapi.Update) *sessions.UserInfo {
@@ -433,37 +460,17 @@ func getUserInfo(update tgbotapi.Update) *sessions.UserInfo {
 	}
 }
 
-func setupDatabase() (*sql.DB, error) {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	db, err := sql.Open("sqlite3", cfg.DbUrl)
-	if err != nil {
-		fmt.Println("error to get cfg.DbUrl")
-		return nil, err
-	}
-	return db, nil
-}
-
-func initProductService(db *sql.DB) *services.ProductService {
-	repo := repository.NewSqliteProductRepo(db)
-	service := services.NewProductService(repo)
-	return service
-}
-
 func deleteMessages(bot *tgbotapi.BotAPI, session sessions.Session, userId int) {
 	color.Redln("LastUserMessageID", session.LastUserMessageID)
 	color.Redln("LastBotMessageID", session.LastBotMessageID)
 
-	if session.LastUserMessageID != 0 {
+	if session.LastUserMessageID != 0 && session.LastUserMessageID != session.LastBotMessageID {
 		color.Redln("delete user message", session.LastUserMessageID)
 
 		messages.DeleteMessage(bot, session.LastUserMessageID, userId)
 		session.LastUserMessageID = 0
 	}
-	if session.LastBotMessageID != 0 {
+	if session.LastBotMessageID != 0 && session.LastUserMessageID != session.LastBotMessageID {
 		color.Redln("delete bot message", session.LastBotMessageID)
 
 		messages.DeleteMessage(bot, session.LastBotMessageID, userId)

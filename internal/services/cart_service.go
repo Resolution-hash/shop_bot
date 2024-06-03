@@ -21,6 +21,10 @@ func (s *CartService) AddItem(item repository.CartItem) (int, error) {
 	return s.Repo.AddItem(item)
 }
 
+func (s *CartService) GetQuantityByItemID(item repository.CartItem) (int, error) {
+	return s.Repo.GetQuantityByItemID(item)
+}
+
 func (s *CartService) Increment(item repository.CartItem) (int, error) {
 	return s.Repo.Increment(item)
 }
@@ -29,11 +33,17 @@ func (s *CartService) Decrement(item repository.CartItem) (int, error) {
 	return s.Repo.Decrement(item)
 }
 
-func (s *CartService) GetCartText(userID int64) (string, error) {
+func (s *CartService) GetCartInfo(userID int64) (string, error) {
 	products, err := s.GetItemsByUserID(userID)
 	if err != nil {
 		return "", err
 	}
+	// var imageNames []string
+
+	// for _, product := range products {
+	// 	color.Redln("Product", product.Name, "Image ", product.Image)
+	// 	imageNames = append(imageNames, product.Image)
+	// }
 
 	return formatCartText(products), nil
 }

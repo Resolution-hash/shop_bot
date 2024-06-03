@@ -59,6 +59,7 @@ func SendMessageWithPhoto(bot *tgbotapi.BotAPI, userID int, text string, keyboar
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	path := cfg.ImagesUrl + "\\" + imageName + ".jpg"
 	color.Redln(path)
 
@@ -92,6 +93,51 @@ func SendMessageWithPhoto(bot *tgbotapi.BotAPI, userID int, text string, keyboar
 	return sentMsg.MessageID
 }
 
+// func SendMessageWithPhotos(bot *tgbotapi.BotAPI, userID int, text string, keyboard interface{}, imageNames []string) int {
+// 	cfg, err := config.LoadConfig()
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	color.Redln("imageNames LEN", len(imageNames))
+// 	files := make(map[string]tgbotapi.RequestFileData)
+// 	mediaGroup := make([]interface{}, len(imageNames))
+// 	for i, imageName := range imageNames {
+// 		color.Redln("imageName", imageName)
+// 		path := cfg.ImagesUrl + "\\" + imageName + ".jpg"
+// 		color.Redln(path)
+
+// 		file, err := os.Open(path)
+// 		if err != nil {
+// 			fmt.Println("Error to upload file")
+// 		}
+// 		defer file.Close()
+
+// 		photo := tgbotapi.NewInputMediaPhoto(path)
+
+// 		if i == 0 {
+// 			photo.Caption = text
+// 		}
+
+// 		mediaGroup[i] = photo
+// 	}
+// 	mediaGroupConfig := tgbotapi.NewMediaGroup(int64(userID), mediaGroup)
+
+// 	if keyboard != nil {
+// 		switch k := keyboard.(type) {
+// 		case tgbotapi.InlineKeyboardMarkup:
+// 			mediaGroupConfig.ReplyMarkup = k
+// 		case tgbotapi.ReplyKeyboardMarkup:
+// 			mediaGroupConfig.ReplyMarkup = k
+// 		}
+// 	}
+// 	sentMsg, err := bot.Send(mediaGroupConfig)
+// 	if err != nil {
+// 		color.Redln("Ошибка отправки сообщения:", err)
+// 		return 0
+// 	}
+// 	return sentMsg.MessageID
+// }
+
 func DeleteMessage(bot *tgbotapi.BotAPI, messageID int, userID int) {
 	deleteConfig := tgbotapi.NewDeleteMessage(int64(userID), messageID)
 	if _, err := bot.Send(deleteConfig); err != nil {
@@ -111,13 +157,7 @@ func GetReplyKeyboard() tgbotapi.ReplyKeyboardMarkup {
 
 func GetKeyboard(value string, back interface{}) tgbotapi.InlineKeyboardMarkup {
 	switch value {
-	// case "start":
-	// 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
-	// 		tgbotapi.NewInlineKeyboardRow(
-	// 			tgbotapi.NewInlineKeyboardButtonData("Керамика", "ceramic"),
-	// 		),
-	// 	)
-	// 	return keyboard
+
 	case "Магазин":
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
@@ -137,7 +177,7 @@ func GetKeyboard(value string, back interface{}) tgbotapi.InlineKeyboardMarkup {
 	case "buttonForCart":
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Изменить корзину⬅️", back.(string)),
+				tgbotapi.NewInlineKeyboardButtonData("Изменить корзину⬅️", "changeCart"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("Оформить заказ ⬅️", back.(string)),
@@ -206,6 +246,18 @@ func GetDynamicKeyboard(value string, session *sessions.Session) tgbotapi.Inline
 			),
 		)
 		return keyboard
+	// case "cart":
+	// 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+	// 		tgbotapi.NewInlineKeyboardRow(
+	// 			tgbotapi.NewInlineKeyboardButtonData("⏪", "prevProductCart"),
+	// 			tgbotapi.NewInlineKeyboardButtonData("⏩", "nextProductCart"),
+	// 		),
+	// 		cartButtons,
+	// 		tgbotapi.NewInlineKeyboardRow(
+	// 			tgbotapi.NewInlineKeyboardButtonData("Вернуться ⬅️", "Корзина"),
+	// 		),
+	// 	)
+	// 	return keyboard
 	case "back":
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
@@ -219,6 +271,31 @@ func GetDynamicKeyboard(value string, session *sessions.Session) tgbotapi.Inline
 		return keyboard
 	}
 
+}
+
+func GetCartKeyboard(session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
+	currentCard := session.CardManager.CurrentProductCart
+	total := session.CartManager.Total(int64(currentCard.ID))
+	color.Redln("total in getDynamicKeyboard func:", total)
+
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⏪", "prevProductCart"),
+			tgbotapi.NewInlineKeyboardButtonData("⏩", "nextProductCart"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("➖", "decrementProductCart"),
+			tgbotapi.NewInlineKeyboardButtonData(total, "no_action"),
+			tgbotapi.NewInlineKeyboardButtonData("➕", "incrementProductCart"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Удалить из корзины", "Корзина"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Вернуться ⬅️", "Магазин"),
+		),
+	)
+	return keyboard
 }
 
 func GetMessageText(step string) string {

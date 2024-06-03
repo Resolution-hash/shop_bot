@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/Resolution-hash/shop_bot/internal/card"
-	"github.com/Resolution-hash/shop_bot/internal/repository"
 	"github.com/gookit/color"
 )
 
@@ -14,7 +13,7 @@ type Session struct {
 	LastUserMessageID int
 	LastBotMessageID  int
 	CardManager       *card.CardManager
-	CartManager       *repository.Cart
+	CartManager       *card.CartManager
 }
 
 type UserInfo struct {
@@ -43,7 +42,7 @@ func (sm *SessionManager) CreateSession(userInfo *UserInfo) *Session {
 		LastUserMessageID: 0,
 		LastBotMessageID:  0,
 		CardManager:       card.NewCardManager(),
-		CartManager:       repository.NewCart(),
+		CartManager:       card.NewCartManager(),
 		// Keyboard:    keyboard,
 	}
 	return sm.sessions[userInfo.UserID]
