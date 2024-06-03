@@ -26,10 +26,11 @@ func StartBot(cfg *config.Config) {
 
 	for update := range updates {
 		if update.Message != nil {
-			color.Blue.Print("\n\n\n" + update.Message.Text)
+			color.Blueln("\n\n\n" + update.Message.Text)
 			handlers.HandleCommand(bot, update)
 		}
 		if update.CallbackQuery != nil {
+			color.Blueln("\n\n\n" + update.CallbackQuery.Data)
 			handlers.HandleCallback(bot, update)
 		}
 

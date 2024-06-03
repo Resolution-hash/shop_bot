@@ -24,7 +24,7 @@ func SendMessage(bot *tgbotapi.BotAPI, userID int, text string, keyboard interfa
 	msg.ParseMode = "HTML"
 	sentMsg, err := bot.Send(msg)
 	if err != nil {
-		log.Printf("Ошибка отправки сообщения: %s\n", err)
+		color.Redln("Ошибка отправки сообщения: %s\n", err)
 		return 0
 	}
 
@@ -36,9 +36,21 @@ func SendReplyKeyboard(bot *tgbotapi.BotAPI, userID int, text string, keyboard t
 	msg.ReplyMarkup = keyboard
 	sentMsg, err := bot.Send(msg)
 	if err != nil {
-		log.Printf("Ошибка отправки сообщения: %s\n", err)
+		color.Redln("Ошибка отправки сообщения: %s", err)
 		return 0
 	}
+	color.Greenln("Keyboard is fetched")
+	return sentMsg.MessageID
+}
+
+func EditMessage(bot *tgbotapi.BotAPI, userID int, messageID int, text string) int {
+	msg := tgbotapi.NewEditMessageText(int64(userID), messageID, "Новый текст")
+	sentMsg, err := bot.Send(msg)
+	if err != nil {
+		color.Redln("Ошибка отправки сообщения: %s\n", err)
+		return 0
+	}
+	color.Greenln("Keyboard is fetched")
 	return sentMsg.MessageID
 }
 
@@ -74,7 +86,7 @@ func SendMessageWithPhoto(bot *tgbotapi.BotAPI, userID int, text string, keyboar
 	}
 	sentMsg, err := bot.Send(msg)
 	if err != nil {
-		log.Printf("Ошибка отправки сообщения: %s\n", err)
+		color.Redln("Ошибка отправки сообщения:", err)
 		return 0
 	}
 	return sentMsg.MessageID
@@ -152,7 +164,7 @@ func GetKeyboard(value string, back interface{}) tgbotapi.InlineKeyboardMarkup {
 func GetDynamicKeyboard(value string, session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
 	currentCard := session.CardManager.CurrentCard
 	total := session.CartManager.Total(currentCard.ID)
-	color.Redln("total in  getDynamicKeyboard func:", total)
+	color.Redln("total in getDynamicKeyboard func:", total)
 	var cartButtons []tgbotapi.InlineKeyboardButton
 
 	if total != "0" {

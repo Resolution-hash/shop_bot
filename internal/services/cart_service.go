@@ -52,8 +52,8 @@ func formatCartText(items []*repository.CartProduct) string {
 
 	for i, item := range items {
 		itemTotal := item.Price * float64(item.Quantity)
-		sb.WriteString(fmt.Sprintf("<b>%d</b>.%s\n   Количество: %dшт\n   Цена за 1 шт: <i>%0.fруб</i>.\n", i+1, item.Name, item.Quantity, item.Price))
-		sb.WriteString(fmt.Sprint("  ----------------------\n"))
+		sb.WriteString(fmt.Sprintf("<b>%d</b>.%s\n   Количество: %d шт\n   Цена за 1 шт: %0.fруб.\n", i+1, item.Name, item.Quantity, item.Price))
+		sb.WriteString(fmt.Sprint("  ----------------------------------------------\n"))
 		totalPrice += itemTotal
 	}
 

@@ -27,13 +27,22 @@ func HandleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		session = SessionManager.CreateSession(userInfo)
 	}
 	session.LastUserMessageID = userMessageID
+	deleteMessages(bot, *session, userInfo.UserID)
 
-	if session.LastUserMessageID != 0 {
-		messages.DeleteMessage(bot, session.LastUserMessageID, userInfo.UserID)
-	}
-	if session.LastBotMessageID != 0 {
-		messages.DeleteMessage(bot, session.LastBotMessageID, userInfo.UserID)
-	}
+	// color.Redln("LastUserMessageID", session.LastUserMessageID)
+	// color.Redln("LastBotMessageID", session.LastBotMessageID)
+
+	// if session.LastUserMessageID != 0 {
+	// 	color.Redln("delete user message", session.LastUserMessageID)
+	// 	messages.DeleteMessage(bot, session.LastUserMessageID, userInfo.UserID)
+	// 	session.LastUserMessageID = 0
+	// }
+	// if session.LastBotMessageID != 0 {
+	// 	color.Redln("delete bot message", session.LastBotMessageID)
+
+	// 	messages.DeleteMessage(bot, session.LastBotMessageID, userInfo.UserID)
+	// 	session.LastBotMessageID = 0
+	// }
 
 	var keyboard tgbotapi.ReplyKeyboardMarkup
 	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
@@ -43,8 +52,25 @@ func HandleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	case "/start":
 		keyboard = messages.GetReplyKeyboard()
 		messageText = messages.GetMessageText("start")
-		messages.SendReplyKeyboard(bot, userInfo.UserID, messageText, keyboard)
+
+		botMessageID = messages.SendReplyKeyboard(bot, userInfo.UserID, messageText, keyboard)
+
+		session.LastBotMessageID = botMessageID
+
+	case "Магазин":
+		// keyboard = messages.GetReplyKeyboard()
+		// _ = messages.SendReplyKeyboard(bot, userInfo.UserID, " ", keyboard)
+
+		// botMessageID = messages.EditMessage(bot, userInfo.UserID, session.LastBotMessageID, messageText)
+		// session.LastBotMessageID = botMessageID
+		inlineKeyboard = messages.GetKeyboard(data, nil)
+		messageText = "Выберите категорию: "
+		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
+		session.LastBotMessageID = botMessageID
+
 	case "Корзина":
+		// keyboard = messages.GetReplyKeyboard()
+		// messages.SendReplyKeyboard(bot, userInfo.UserID, " ", keyboard)
 
 		db, err := setupDatabase()
 		if err != nil {
@@ -74,7 +100,7 @@ func HandleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			return
 		}
 
-		inlineKeyboard = messages.GetKeyboard("Корзина", "Магазин")
+		inlineKeyboard = messages.GetKeyboard("buttonForCart", "Магазин")
 		botMessageID := messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
 		session.LastBotMessageID = botMessageID
 
@@ -82,10 +108,11 @@ func HandleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		keyboard = messages.GetReplyKeyboard()
 		messageText = messages.GetMessageText("start")
 		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, keyboard)
+		session.LastBotMessageID = botMessageID
 	}
 
 	SessionManager.PrintLogs(userInfo.UserID)
-	session.LastBotMessageID = botMessageID
+
 }
 
 func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
@@ -98,16 +125,26 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		session = SessionManager.CreateSession(userInfo)
 	}
 	session.LastUserMessageID = callbackMessageID
+	deleteMessages(bot, *session, userInfo.UserID)
+	// deleteMessages(bot, *session, userInfo.UserID)
+	// color.Redln("LastUserMessageID", session.LastUserMessageID)
+	// color.Redln("LastBotMessageID", session.LastBotMessageID)
 
-	if session.LastUserMessageID != 0 {
-		messages.DeleteMessage(bot, session.LastUserMessageID, userInfo.UserID)
-	}
-	if session.LastBotMessageID != 0 {
-		messages.DeleteMessage(bot, session.LastBotMessageID, userInfo.UserID)
-	}
+	// if session.LastUserMessageID != 0 {
+	// 	color.Redln("delete user message", session.LastUserMessageID)
+
+	// 	messages.DeleteMessage(bot, session.LastUserMessageID, userInfo.UserID)
+	// 	session.LastUserMessageID = 0
+	// }
+	// if session.LastBotMessageID != 0 {
+	// 	color.Redln("delete bot message", session.LastBotMessageID)
+
+	// 	messages.DeleteMessage(bot, session.LastBotMessageID, userInfo.UserID)
+	// 	session.LastBotMessageID = 0
+	// }
 
 	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
-	var keyboard tgbotapi.ReplyKeyboardMarkup
+	// var keyboard tgbotapi.ReplyKeyboardMarkup
 	var messageText string
 	var botMessageID int
 	switch data {
@@ -143,10 +180,11 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		inlineKeyboard := messages.GetDynamicKeyboard("card", session)
 		messageText = card.GetTextTemplate()
 
-		keyboard = messages.GetReplyKeyboard()
-		messages.SendReplyKeyboard(bot, userInfo.UserID, "", keyboard)
+		// keyboard = messages.GetReplyKeyboard()
+		// messages.SendReplyKeyboard(bot, userInfo.UserID, " ", keyboard)
 
 		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, inlineKeyboard, card.Image)
+		session.LastBotMessageID = botMessageID
 	case "dishware":
 		db, err := setupDatabase()
 		if err != nil {
@@ -173,10 +211,11 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		inlineKeyboard := messages.GetDynamicKeyboard("card", session)
 		messageText = card.GetTextTemplate()
 
-		keyboard = messages.GetReplyKeyboard()
-		messages.SendReplyKeyboard(bot, userInfo.UserID, "", keyboard)
+		// keyboard = messages.GetReplyKeyboard()
+		// messages.SendReplyKeyboard(bot, userInfo.UserID, " ", keyboard)
 
 		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, inlineKeyboard, card.Image)
+		session.LastBotMessageID = botMessageID
 	case "drawings":
 		db, err := setupDatabase()
 		if err != nil {
@@ -201,10 +240,11 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		inlineKeyboard := messages.GetDynamicKeyboard("card", session)
 		messageText = card.GetTextTemplate()
 
-		keyboard = messages.GetReplyKeyboard()
-		messages.SendReplyKeyboard(bot, userInfo.UserID, "", keyboard)
+		// keyboard = messages.GetReplyKeyboard()
+		// messages.SendReplyKeyboard(bot, userInfo.UserID, " ", keyboard)
 
 		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, inlineKeyboard, card.Image)
+		session.LastBotMessageID = botMessageID
 	case "showAllItems":
 		db, err := setupDatabase()
 		if err != nil {
@@ -229,10 +269,11 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		inlineKeyboard := messages.GetDynamicKeyboard("card", session)
 		messageText = card.GetTextTemplate()
 
-		keyboard = messages.GetReplyKeyboard()
-		messages.SendReplyKeyboard(bot, userInfo.UserID, "", keyboard)
+		// keyboard = messages.GetReplyKeyboard()
+		// messages.SendReplyKeyboard(bot, userInfo.UserID, " ", keyboard)
 
 		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, inlineKeyboard, card.Image)
+		session.LastBotMessageID = botMessageID
 	case "prev":
 		defer func(s *sessions.Session) {
 			s.CardManager.PrintLogs()
@@ -248,6 +289,7 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText = currentCard.GetTextTemplate()
 
 		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, currentCard.Image)
+		session.LastBotMessageID = botMessageID
 	case "next":
 		defer func(s *sessions.Session) {
 			s.CardManager.PrintLogs()
@@ -263,6 +305,7 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText = currentCard.GetTextTemplate()
 
 		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, currentCard.Image)
+		session.LastBotMessageID = botMessageID
 	case "addToCart":
 		defer func(s *sessions.Session) {
 			s.CardManager.PrintLogs()
@@ -296,6 +339,7 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText = currentCard.GetTextTemplate()
 
 		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, currentCard.Image)
+		session.LastBotMessageID = botMessageID
 	case "increment":
 		defer func(s *sessions.Session) {
 			s.CardManager.PrintLogs()
@@ -327,6 +371,7 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText = currentCard.GetTextTemplate()
 
 		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, currentCard.Image)
+		session.LastBotMessageID = botMessageID
 	case "decrement":
 		defer func(s *sessions.Session) {
 			s.CardManager.PrintLogs()
@@ -353,17 +398,18 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		if err != nil {
 			color.Redln("Error to increment item:", err)
 		}
-		color.Redln("Total in increment func:", total)
+		color.Redln("Total increment func:", total)
 
 		session.CartManager.UpdateQuantity(currentCard.ID, total)
 		keyboard := messages.GetDynamicKeyboard("addToCart", session)
 		messageText = currentCard.GetTextTemplate()
 
 		botMessageID = messages.SendMessageWithPhoto(bot, userInfo.UserID, messageText, keyboard, currentCard.Image)
+		session.LastBotMessageID = botMessageID
 	}
 
 	SessionManager.PrintLogs(userInfo.UserID)
-	session.LastBotMessageID = botMessageID
+
 }
 
 func getUserInfo(update tgbotapi.Update) *sessions.UserInfo {
@@ -405,4 +451,22 @@ func initProductService(db *sql.DB) *services.ProductService {
 	repo := repository.NewSqliteProductRepo(db)
 	service := services.NewProductService(repo)
 	return service
+}
+
+func deleteMessages(bot *tgbotapi.BotAPI, session sessions.Session, userId int) {
+	color.Redln("LastUserMessageID", session.LastUserMessageID)
+	color.Redln("LastBotMessageID", session.LastBotMessageID)
+
+	if session.LastUserMessageID != 0 {
+		color.Redln("delete user message", session.LastUserMessageID)
+
+		messages.DeleteMessage(bot, session.LastUserMessageID, userId)
+		session.LastUserMessageID = 0
+	}
+	if session.LastBotMessageID != 0 {
+		color.Redln("delete bot message", session.LastBotMessageID)
+
+		messages.DeleteMessage(bot, session.LastBotMessageID, userId)
+		session.LastBotMessageID = 0
+	}
 }
