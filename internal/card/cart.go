@@ -21,6 +21,47 @@ func NewCartManager() *CartManager {
 	}
 }
 
+func (c *CartManager) GetCartItemsDetails(userID int64) (string, error) {
+	db, err := setupDatabase()
+	if err != nil {
+		color.Redln(err)
+	}
+	defer db.Close()
+
+	service := initCardService(db)
+
+	details, err := service.GetCartInfo(int64(userID))
+	if err != nil {
+		return "", err
+	}
+	return details, nil
+
+	// repo := repository.NewSqliteCartRepo(db)
+	// service := services.NewCartService(repo)
+
+	// if repository.IsEmpty(items) {
+	// 	color.Redln("userID:", userInfo.UserID, " Корзина пуста", err)
+	// 	inlineKeyboard = messages.GetKeyboard("back", "Магазин")
+	// 	messageText = "Корзина пуста"
+	// 	botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
+	// 	session.LastBotMessageID = botMessageID
+	// 	return
+	// }
+
+	// messageText, err := service.GetCartInfo(int64(userInfo.UserID))
+	// if err != nil {
+	// 	color.Redln("userID:", userInfo.UserID, "Error:", err)
+	// 	inlineKeyboard = messages.GetKeyboard("back", "Магазин")
+	// 	messageText = "Произошла ошибка загрузки. Пожалуйста, попробуйте позже"
+	// 	botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
+	// 	session.LastBotMessageID = botMessageID
+	// 	return
+}
+
+// func (c *CartManager) Get(item repository.CartItem) error {
+
+// }
+
 func (c *CartManager) Increment(item repository.CartItem) error {
 	cfg, err := config.LoadConfig()
 	if err != nil {

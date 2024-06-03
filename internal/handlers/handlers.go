@@ -74,6 +74,11 @@ func HandleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		// 	return
 		// }
 
+		messageText, err := session.CartManager.GetCartItemsDetails(int64(userInfo.UserID))
+		if err != nil {
+			color.Redln(err)
+		}
+
 		inlineKeyboard = messages.GetKeyboard("buttonForCart", "Магазин")
 		botMessageID := messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
 		session.LastBotMessageID = botMessageID

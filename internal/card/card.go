@@ -38,6 +38,24 @@ func NewCardManager() *CardManager {
 	}
 }
 
+func (cm *CardManager) GetCardOnCart(userID int) error {
+	db, err := setupDatabase()
+	if err != nil {
+		log.Println(err)
+	}
+	defer db.Close()
+
+	service := initCardService(db)
+
+	products, err := service.GetItemsByUserID(int64(userID))
+	if err != nil {
+		log.Println(err)
+	}
+	cm.UpdateInfo(data, NewCard(products))
+
+	return nil
+}
+
 func (cm *CardManager) GetCardByType(data string) error {
 	db, err := setupDatabase()
 	if err != nil {
