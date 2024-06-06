@@ -5,11 +5,12 @@ import (
 	"sync"
 
 	"github.com/Resolution-hash/shop_bot/internal/card"
+	"github.com/Resolution-hash/shop_bot/internal/repository"
 	"github.com/gookit/color"
 )
 
 type Session struct {
-	User              *UserInfo
+	User              *repository.User
 	LastUserMessageID int
 	LastBotMessageID  int
 	PrevStep          string
@@ -23,13 +24,6 @@ func (s *Session) UpdateStep(step string) {
 	s.CurrentStep = step
 }
 
-type UserInfo struct {
-	UserID     int
-	First_name string
-	Last_name  string
-	User_name  string
-}
-
 type SessionManager struct {
 	sessions map[int]*Session
 	mu       sync.RWMutex
@@ -41,7 +35,7 @@ func NewSessionManager() *SessionManager {
 	}
 }
 
-func (sm *SessionManager) CreateSession(userInfo *UserInfo) *Session {
+func (sm *SessionManager) CreateSession(userInfo *repository.User) *Session {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 	sm.sessions[userInfo.UserID] = &Session{

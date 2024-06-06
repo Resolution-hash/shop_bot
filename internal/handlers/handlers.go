@@ -34,15 +34,12 @@ func HandleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText = messages.GetMessageText("start")
 
 		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-
 		session.LastBotMessageID = botMessageID
-
 	case "Магазин":
 		inlineKeyboard = messages.GetKeyboard(data, session, nil)
 		messageText = "Выберите категорию: "
 		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
 		session.LastBotMessageID = botMessageID
-
 	case "Корзина":
 		messageText, err := session.CartManager.GetCartItemsDetails(int64(userInfo.UserID))
 		if err != nil {
@@ -320,10 +317,10 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	SessionManager.PrintLogs(userInfo.UserID)
 }
 
-func getUserInfo(update tgbotapi.Update) *sessions.UserInfo {
+func getUserInfo(update tgbotapi.Update) *repository.User {
 	if update.CallbackQuery != nil {
 		user := update.CallbackQuery.From
-		return &sessions.UserInfo{
+		return &repository.User{
 			UserID:     user.ID,
 			First_name: user.FirstName,
 			Last_name:  user.LastName,
@@ -333,7 +330,7 @@ func getUserInfo(update tgbotapi.Update) *sessions.UserInfo {
 	}
 
 	user := update.Message.From
-	return &sessions.UserInfo{
+	return &repository.User{
 		UserID:     user.ID,
 		First_name: user.FirstName,
 		Last_name:  user.LastName,
