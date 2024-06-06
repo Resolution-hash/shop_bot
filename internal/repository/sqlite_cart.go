@@ -186,7 +186,15 @@ func (repo *SqliteCartRepo) GetItemsByUserID(userID int64) ([]*CartProduct, erro
 	return cartProducts, nil
 }
 
-// RemoveItem(int64) error
+func (repo *SqliteCartRepo) DeleteItem(item CartItem) error {
+	_, err := prepareQueryProductCart("delete", "cart", item).(squirrel.DeleteBuilder).
+		RunWith(repo.Db).
+		Exec()
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 func prepareQueryProductCart(operation string, table string, data interface{}) squirrel.Sqlizer {
 	switch operation {

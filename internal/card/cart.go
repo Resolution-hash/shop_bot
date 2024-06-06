@@ -27,6 +27,22 @@ func (c *CartManager) ChangeCartStatus(status bool) {
 	c.CartIsEmpty = status
 }
 
+func (c *CartManager) DeleteItem(item repository.CartItem) error {
+	db, err := setupDatabase()
+	if err != nil {
+		color.Redln(err)
+	}
+	defer db.Close()
+
+	service := InitCartService(db)
+
+	err = service.DeleteItem(item)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *CartManager) GetCartItemsDetails(userID int64) (string, error) {
 	db, err := setupDatabase()
 	if err != nil {
@@ -34,7 +50,7 @@ func (c *CartManager) GetCartItemsDetails(userID int64) (string, error) {
 	}
 	defer db.Close()
 
-	service := InitCardService(db)
+	service := InitCartService(db)
 
 	products, err := service.GetItemsByUserID(userID)
 	if err != nil {
@@ -48,23 +64,6 @@ func (c *CartManager) GetCartItemsDetails(userID int64) (string, error) {
 
 	return service.FormatCartText(products), nil
 }
-
-// func (c *CartManager) GetItemsByUserID(userID int64) ([]*repository.CartProduct, error) {
-// 	db, err := setupDatabase()
-// 	if err != nil {
-// 		color.Redln(err)
-// 	}
-// 	defer db.Close()
-
-// 	service := InitCardService(db)
-
-// 	products, err := service.GetItemsByUserID(int64(userID))
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return products, nil
-
-// }
 
 func (c *CartManager) Increment(item repository.CartItem) error {
 	cfg, err := config.LoadConfig()
@@ -80,7 +79,7 @@ func (c *CartManager) Increment(item repository.CartItem) error {
 
 	defer db.Close()
 
-	service := InitCardService(db)
+	service := InitCartService(db)
 
 	total, err := service.Increment(item)
 	if err != nil {
@@ -105,7 +104,7 @@ func (c *CartManager) Decrement(item repository.CartItem) error {
 
 	defer db.Close()
 
-	service := InitCardService(db)
+	service := InitCartService(db)
 
 	total, err := service.Decrement(item)
 	if err != nil {
@@ -130,7 +129,7 @@ func (c *CartManager) AddToCart(item repository.CartItem) error {
 
 	defer db.Close()
 
-	service := InitCardService(db)
+	service := InitCartService(db)
 
 	total, err := service.AddItem(item)
 	if err != nil {
@@ -140,14 +139,6 @@ func (c *CartManager) AddToCart(item repository.CartItem) error {
 	c.Items[item.ProductID] = total
 	return nil
 }
-
-// func (c *Cart) UpdateQuantity(productID int64, quantity int) {
-// 	c.Items[productID] = quantity
-// }
-
-// func (c *CartManager) Total(productID int64) string {
-// 	return strconv.Itoa(c.Items[productID])
-// }
 
 func (c *CartManager) GetQuantity(itemID int, userID int) (string, error) {
 	cfg, err := config.LoadConfig()
@@ -163,7 +154,7 @@ func (c *CartManager) GetQuantity(itemID int, userID int) (string, error) {
 
 	defer db.Close()
 
-	service := InitCardService(db)
+	service := InitCartService(db)
 
 	item := repository.CartItem{
 		ProductID: int64(itemID),
@@ -188,7 +179,7 @@ func (c *CartManager) PrintLogs() {
 	fmt.Print("___________________\n\n")
 }
 
-func InitCardService(db *sql.DB) *services.CartService {
+func InitCartService(db *sql.DB) *services.CartService {
 	repo := repository.NewSqliteCartRepo(db)
 	return services.NewCartService(repo)
 }

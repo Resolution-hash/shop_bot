@@ -77,7 +77,7 @@ func (cm *CardManager) GetCartItemsByUserID(data string, userID int) error {
 	}
 	defer db.Close()
 
-	service := InitCardService(db)
+	service := InitCartService(db)
 
 	products, err := service.GetItemsByUserID(int64(userID))
 	if err != nil {

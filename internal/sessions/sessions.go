@@ -12,8 +12,15 @@ type Session struct {
 	User              *UserInfo
 	LastUserMessageID int
 	LastBotMessageID  int
+	PrevStep          string
+	CurrentStep       string
 	CardManager       *card.CardManager
 	CartManager       *card.CartManager
+}
+
+func (s *Session) UpdateStep(step string) {
+	s.PrevStep = s.CurrentStep
+	s.CurrentStep = step
 }
 
 type UserInfo struct {
@@ -43,7 +50,6 @@ func (sm *SessionManager) CreateSession(userInfo *UserInfo) *Session {
 		LastBotMessageID:  0,
 		CardManager:       card.NewCardManager(),
 		CartManager:       card.NewCartManager(),
-		// Keyboard:    keyboard,
 	}
 	return sm.sessions[userInfo.UserID]
 }
@@ -64,8 +70,10 @@ func (sm *SessionManager) PrintLogs(userID int) {
 	color.Yellowln("User_name:", s.User.User_name)
 	color.Yellowln("LastUserMessageID:", s.LastUserMessageID)
 	color.Yellowln("LastBotMessageID:", s.LastBotMessageID)
+	color.Yellowln("PrevStep:", s.PrevStep)
+	color.Yellowln("CurrentStep:", s.CurrentStep)
 	color.Yellowln("CardManager:", s.CardManager)
-	color.Yellowln("Cart:", s.CartManager)
+	color.Yellowln("CartManager:", s.CartManager)
 	fmt.Print("___________________\n\n")
 
 }

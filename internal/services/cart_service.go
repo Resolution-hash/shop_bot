@@ -17,6 +17,14 @@ func NewCartService(repo repository.CartRepo) *CartService {
 	}
 }
 
+func (s *CartService) DeleteItem(item repository.CartItem) error {
+	err := s.Repo.DeleteItem(item)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *CartService) GetQuantityByItemID(item repository.CartItem) (int, error) {
 	quantity, err := s.Repo.GetQuantityByItemID(item)
 	if err != nil {

@@ -161,48 +161,104 @@ func GetKeyboard(value string, session *sessions.Session, back interface{}) tgbo
 	case "Магазин":
 		return tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Свечи 🕯️", "candles"),
+				tgbotapi.NewInlineKeyboardButtonData("🕯️ Свечи ", "candles"),
+				tgbotapi.NewInlineKeyboardButtonData("🍷 Посуда для питья ", "drinkware"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Посуда для питья 🍷", "drinkware"),
+				tgbotapi.NewInlineKeyboardButtonData("🍽️ Посуда для еды ", "dishware"),
+				tgbotapi.NewInlineKeyboardButtonData("🔍 Показать все ", "showAllItems"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Посуда для еды 🍽️", "dishware"),
+				tgbotapi.NewInlineKeyboardButtonData("🛒 Перейти в корзину ", "Корзина"),
 			),
-			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Показать все 🔍", "showAllItems"),
-			),
+			// tgbotapi.NewInlineKeyboardRow(
+			// 	tgbotapi.NewInlineKeyboardButtonData("Показать все 🔍", "showAllItems"),
+			// ),
 		)
 	case "Корзина":
 		if session.CartManager.CartIsEmpty {
 			return tgbotapi.NewInlineKeyboardMarkup(
 				tgbotapi.NewInlineKeyboardRow(
-					tgbotapi.NewInlineKeyboardButtonData("Вернуться ⬅️", "Магазин"),
+					tgbotapi.NewInlineKeyboardButtonData("🛍️ Перейти в магазин ", "Магазин"),
 				),
 			)
 		}
 		return tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Изменить корзину ✏️", "changeCart"),
+				tgbotapi.NewInlineKeyboardButtonData("✏️ Изменить корзину ", "changeCart"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Оформить заказ 📦", "Checkout"),
+				tgbotapi.NewInlineKeyboardButtonData("📦 Оформить заказ ", "Checkout"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Вернуться ⬅️", "Магазин"),
+				tgbotapi.NewInlineKeyboardButtonData("🛍️ Перейти в магазин", "Магазин"),
 			),
 		)
+	case "changeCart":
+		itemID := int(session.CardManager.CurrentCard.ID)
+		userID := session.User.UserID
+
+		quantity, err := session.CartManager.GetQuantity(itemID, userID)
+		if err != nil {
+			color.Redln(err)
+		}
+		color.Redln("quantity", quantity, " itemID", itemID)
+
+		if quantity != "0" {
+			return tgbotapi.NewInlineKeyboardMarkup(
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("⏪", "prev"),
+					tgbotapi.NewInlineKeyboardButtonData("⏩", "next"),
+				),
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("Удалить", "delete"),
+					tgbotapi.NewInlineKeyboardButtonData("➖", "decrement"),
+					tgbotapi.NewInlineKeyboardButtonData(quantity, "no_action"),
+					tgbotapi.NewInlineKeyboardButtonData("➕", "increment"),
+				),
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("🛍️ Перейти в магазин", "Магазин"),
+				),
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("📝 Вернуться к оформлению", "Корзина"),
+				),
+			)
+
+		} else {
+			return tgbotapi.NewInlineKeyboardMarkup(
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("⏪", "prev"),
+					tgbotapi.NewInlineKeyboardButtonData("⏩", "next"),
+				),
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("🛒 Добавить в корзину", "addToCart"),
+				),
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("🛍️ Перейти в магазин", "Магазин"),
+				),
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("📝 Вернуться к оформлению", "Корзина"),
+				),
+			)
+		}
+	case "start":
+		return tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("🛍️ Перейти в магазин", "Магазин"),
+			),
+		)
+
 	case "back":
 		return tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Вернуться ⬅️", back.(string)),
+				tgbotapi.NewInlineKeyboardButtonData("⬅️ Вернуться", back.(string)),
 			),
 		)
 	default:
 		color.Redln("Value is not found in GetKeyboard()")
 		return tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Вернуться ⬅️", "Магазин"),
+				tgbotapi.NewInlineKeyboardButtonData("⬅️ Вернуться", "Магазин"),
 			),
 		)
 	}
@@ -225,15 +281,16 @@ func GetCardKeyboard(session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
 				tgbotapi.NewInlineKeyboardButtonData("⏩", "next"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Удалить", "delete"),
 				tgbotapi.NewInlineKeyboardButtonData("➖", "decrement"),
 				tgbotapi.NewInlineKeyboardButtonData(quantity, "no_action"),
 				tgbotapi.NewInlineKeyboardButtonData("➕", "increment"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Перейти в корзину 🛒", "Корзина"),
+				tgbotapi.NewInlineKeyboardButtonData("🛒 Перейти в корзину", "Корзина"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Вернуться ⬅️", "Магазин"),
+				tgbotapi.NewInlineKeyboardButtonData("⬅️ Вернуться", "Магазин"),
 			),
 		)
 
@@ -244,102 +301,14 @@ func GetCardKeyboard(session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
 				tgbotapi.NewInlineKeyboardButtonData("⏩", "next"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Добавить в корзину  🛒", "addToCart"),
+				tgbotapi.NewInlineKeyboardButtonData("🛒 Добавить в корзину ", "addToCart"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Вернуться ⬅️", "Магазин"),
+				tgbotapi.NewInlineKeyboardButtonData("⬅️ Вернуться", "Магазин"),
 			),
 		)
 	}
 }
-
-// func GetDynamicKeyboard(value string, session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
-// 	itemID := int(session.CardManager.CurrentCard.ID)
-// 	userID := session.User.UserID
-
-// 	quantity, err := session.CartManager.GetQuantity(itemID, userID)
-
-// 	color.Redln("total in getDynamicKeyboard func:", quantity)
-// 	var cartButtons []tgbotapi.InlineKeyboardButton
-
-// 	if total != "0" {
-// 		cartButtons = tgbotapi.NewInlineKeyboardRow(
-// 			tgbotapi.NewInlineKeyboardButtonData("➖", "decrement"),
-// 			tgbotapi.NewInlineKeyboardButtonData(quantity, "no_action"),
-// 			tgbotapi.NewInlineKeyboardButtonData("➕", "increment"),
-// 		)
-// 	} else {
-// 		cartButtons = tgbotapi.NewInlineKeyboardRow(
-// 			tgbotapi.NewInlineKeyboardButtonData("Добавить в корзину  🛒", "addToCart"),
-// 		)
-
-// 	}
-
-// 	switch value {
-// 	case "addToCart":
-// 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
-// 			tgbotapi.NewInlineKeyboardRow(
-// 				tgbotapi.NewInlineKeyboardButtonData("⏪", "prev"),
-// 				tgbotapi.NewInlineKeyboardButtonData("⏩", "next"),
-// 			),
-// 			cartButtons,
-// 			tgbotapi.NewInlineKeyboardRow(
-// 				tgbotapi.NewInlineKeyboardButtonData("Вернуться ⬅️", "Магазин"),
-// 			),
-// 		)
-// 		return keyboard
-// 	case "card":
-// 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
-// 			tgbotapi.NewInlineKeyboardRow(
-// 				tgbotapi.NewInlineKeyboardButtonData("⏪", "prev"),
-// 				tgbotapi.NewInlineKeyboardButtonData("⏩", "next"),
-// 			),
-// 			cartButtons,
-// 			tgbotapi.NewInlineKeyboardRow(
-// 				tgbotapi.NewInlineKeyboardButtonData("Вернуться ⬅️", "Магазин"),
-// 			),
-// 		)
-// 		return keyboard
-
-// 	case "back":
-// 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
-// 			tgbotapi.NewInlineKeyboardRow(
-// 				tgbotapi.NewInlineKeyboardButtonData("Вернуться ⬅️", "Магазин"),
-// 			),
-// 		)
-// 		return keyboard
-// 	default:
-// 		keyboard := tgbotapi.NewInlineKeyboardMarkup()
-// 		color.Redln("value is not found on func getKeyboard()")
-// 		return keyboard
-// 	}
-
-// }
-
-// func GetCartKeyboard(session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
-// 	currentCard := session.CardManager.CurrentProductCart
-// 	total := session.CartManager.Total(int64(currentCard.ID))
-// 	color.Redln("total in getDynamicKeyboard func:", total)
-
-// 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
-// 		tgbotapi.NewInlineKeyboardRow(
-// 			tgbotapi.NewInlineKeyboardButtonData("⏪", "prevProductCart"),
-// 			tgbotapi.NewInlineKeyboardButtonData("⏩", "nextProductCart"),
-// 		),
-// 		tgbotapi.NewInlineKeyboardRow(
-// 			tgbotapi.NewInlineKeyboardButtonData("➖", "decrementProductCart"),
-// 			tgbotapi.NewInlineKeyboardButtonData(total, "no_action"),
-// 			tgbotapi.NewInlineKeyboardButtonData("➕", "incrementProductCart"),
-// 		),
-// 		tgbotapi.NewInlineKeyboardRow(
-// 			tgbotapi.NewInlineKeyboardButtonData("Удалить из корзины", "Корзина"),
-// 		),
-// 		tgbotapi.NewInlineKeyboardRow(
-// 			tgbotapi.NewInlineKeyboardButtonData("Вернуться ⬅️", "Магазин"),
-// 		),
-// 	)
-// 	return keyboard
-// }
 
 func GetMessageText(step string) string {
 	switch step {

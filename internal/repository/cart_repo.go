@@ -41,4 +41,5 @@ type CartRepo interface {
 	Decrement(CartItem) (int, error)
 	GetQuantityByItemID(CartItem) (int, error)
 	GetItemsByUserID(int64) ([]*CartProduct, error)
+	DeleteItem(CartItem) error
 }
