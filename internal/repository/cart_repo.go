@@ -9,10 +9,30 @@ type CartItem struct {
 type CartProduct struct {
 	ProductID   int
 	Name        string
+	Type        string
 	Description string
 	Price       float64
 	Quantity    int
 	Image       string
+}
+
+func (c *CartProduct) GetID() int64 {
+	return int64(c.ProductID)
+}
+func (c *CartProduct) GetName() string {
+	return c.Name
+}
+func (c *CartProduct) GetType() string {
+	return c.Type
+}
+func (c *CartProduct) GetDescription() string {
+	return c.Description
+}
+func (c *CartProduct) GetPrice() float64 {
+	return c.Price
+}
+func (c *CartProduct) GetImage() string {
+	return c.Image
 }
 
 type CartRepo interface {
@@ -20,6 +40,5 @@ type CartRepo interface {
 	Increment(CartItem) (int, error)
 	Decrement(CartItem) (int, error)
 	GetQuantityByItemID(CartItem) (int, error)
-	// RemoveItem(int64) error
 	GetItemsByUserID(int64) ([]*CartProduct, error)
 }

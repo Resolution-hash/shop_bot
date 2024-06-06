@@ -20,7 +20,7 @@ func NewSqliteCartRepo(db *sql.DB) *SqliteCartRepo {
 
 func (repo *SqliteCartRepo) GetQuantityByItemID(item CartItem) (int, error) {
 	var total int
-	err := prepareQueryProductCart("countByID", "cart", item).(squirrel.SelectBuilder).
+	err := prepareQueryProductCart("quantityByID", "cart", item).(squirrel.SelectBuilder).
 		RunWith(repo.Db).
 		QueryRow().Scan(&total)
 	if err != nil {
@@ -44,7 +44,7 @@ func (repo *SqliteCartRepo) AddItem(item CartItem) (int, error) {
 	}
 
 	var total int
-	err = prepareQueryProductCart("countByID", "cart", item).(squirrel.SelectBuilder).
+	err = prepareQueryProductCart("quantityByID", "cart", item).(squirrel.SelectBuilder).
 		RunWith(repo.Db).
 		QueryRow().Scan(&total)
 	if err != nil {
@@ -75,7 +75,7 @@ func (repo *SqliteCartRepo) Increment(item CartItem) (int, error) {
 	}
 
 	var total int
-	err = prepareQueryProductCart("countByID", "cart", item).(squirrel.SelectBuilder).
+	err = prepareQueryProductCart("quantityByID", "cart", item).(squirrel.SelectBuilder).
 		RunWith(repo.Db).
 		QueryRow().Scan(&total)
 	if err != nil {
@@ -92,7 +92,7 @@ func (repo *SqliteCartRepo) Increment(item CartItem) (int, error) {
 
 func (repo *SqliteCartRepo) Decrement(item CartItem) (int, error) {
 	var total int
-	err := prepareQueryProductCart("countByID", "cart", item).(squirrel.SelectBuilder).
+	err := prepareQueryProductCart("quantityByID", "cart", item).(squirrel.SelectBuilder).
 		RunWith(repo.Db).
 		QueryRow().Scan(&total)
 	if err != nil {
@@ -174,6 +174,7 @@ func (repo *SqliteCartRepo) GetItemsByUserID(userID int64) ([]*CartProduct, erro
 		cartProducts[i] = &CartProduct{
 			ProductID:   int(product.ID),
 			Name:        product.Name,
+			Type:        product.Type,
 			Description: product.Description,
 			Price:       product.Price,
 			Quantity:    item.Quantity,
@@ -206,9 +207,12 @@ func prepareQueryProductCart(operation string, table string, data interface{}) s
 	case "decrement":
 		cartItem := data.(CartItem)
 		return squirrel.Update(table).Set("quantity", squirrel.Expr("quantity - 1")).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID}).Where("quantity > 1")
-	case "countByID":
+	case "quantityByID":
 		cartItem := data.(CartItem)
 		return squirrel.Select("SUM(quantity) as total_quantity").From(table).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID})
+	case "isTableEmpty":
+		cartItem := data.(CartItem)
+		return squirrel.Select("COUNT(*)").From(table).Where(squirrel.Eq{"user_id": cartItem.UserID})
 	case "delete":
 		cartItem := data.(CartItem)
 		return squirrel.Delete(table).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID})

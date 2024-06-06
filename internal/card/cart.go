@@ -12,13 +12,19 @@ import (
 )
 
 type CartManager struct {
-	Items map[int64]int
+	Items       map[int64]int
+	CartIsEmpty bool
 }
 
 func NewCartManager() *CartManager {
 	return &CartManager{
-		Items: make(map[int64]int),
+		Items:       make(map[int64]int),
+		CartIsEmpty: true,
 	}
+}
+
+func (c *CartManager) ChangeCartStatus(status bool) {
+	c.CartIsEmpty = status
 }
 
 func (c *CartManager) GetCartItemsDetails(userID int64) (string, error) {
@@ -28,37 +34,35 @@ func (c *CartManager) GetCartItemsDetails(userID int64) (string, error) {
 	}
 	defer db.Close()
 
-	service := initCardService(db)
+	service := InitCardService(db)
 
-	details, err := service.GetCartInfo(int64(userID))
+	products, err := service.GetItemsByUserID(userID)
 	if err != nil {
 		return "", err
 	}
-	return details, nil
+	if len(products) == 0 {
+		c.ChangeCartStatus(true)
+		return "В корзине еще нет товаров.", nil
+	}
+	c.ChangeCartStatus(false)
 
-	// repo := repository.NewSqliteCartRepo(db)
-	// service := services.NewCartService(repo)
-
-	// if repository.IsEmpty(items) {
-	// 	color.Redln("userID:", userInfo.UserID, " Корзина пуста", err)
-	// 	inlineKeyboard = messages.GetKeyboard("back", "Магазин")
-	// 	messageText = "Корзина пуста"
-	// 	botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-	// 	session.LastBotMessageID = botMessageID
-	// 	return
-	// }
-
-	// messageText, err := service.GetCartInfo(int64(userInfo.UserID))
-	// if err != nil {
-	// 	color.Redln("userID:", userInfo.UserID, "Error:", err)
-	// 	inlineKeyboard = messages.GetKeyboard("back", "Магазин")
-	// 	messageText = "Произошла ошибка загрузки. Пожалуйста, попробуйте позже"
-	// 	botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-	// 	session.LastBotMessageID = botMessageID
-	// 	return
+	return service.FormatCartText(products), nil
 }
 
-// func (c *CartManager) Get(item repository.CartItem) error {
+// func (c *CartManager) GetItemsByUserID(userID int64) ([]*repository.CartProduct, error) {
+// 	db, err := setupDatabase()
+// 	if err != nil {
+// 		color.Redln(err)
+// 	}
+// 	defer db.Close()
+
+// 	service := InitCardService(db)
+
+// 	products, err := service.GetItemsByUserID(int64(userID))
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return products, nil
 
 // }
 
@@ -76,7 +80,7 @@ func (c *CartManager) Increment(item repository.CartItem) error {
 
 	defer db.Close()
 
-	service := initCardService(db)
+	service := InitCardService(db)
 
 	total, err := service.Increment(item)
 	if err != nil {
@@ -101,7 +105,7 @@ func (c *CartManager) Decrement(item repository.CartItem) error {
 
 	defer db.Close()
 
-	service := initCardService(db)
+	service := InitCardService(db)
 
 	total, err := service.Decrement(item)
 	if err != nil {
@@ -126,7 +130,7 @@ func (c *CartManager) AddToCart(item repository.CartItem) error {
 
 	defer db.Close()
 
-	service := initCardService(db)
+	service := InitCardService(db)
 
 	total, err := service.AddItem(item)
 	if err != nil {
@@ -141,8 +145,39 @@ func (c *CartManager) AddToCart(item repository.CartItem) error {
 // 	c.Items[productID] = quantity
 // }
 
-func (c *CartManager) Total(productID int64) string {
-	return strconv.Itoa(c.Items[productID])
+// func (c *CartManager) Total(productID int64) string {
+// 	return strconv.Itoa(c.Items[productID])
+// }
+
+func (c *CartManager) GetQuantity(itemID int, userID int) (string, error) {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		return "", err
+	}
+
+	db, err := sql.Open("sqlite3", cfg.DbUrl)
+	if err != nil {
+		color.Redln("error to get cfg.DbUrl")
+		return "", err
+	}
+
+	defer db.Close()
+
+	service := InitCardService(db)
+
+	item := repository.CartItem{
+		ProductID: int64(itemID),
+		UserID:    int64(userID),
+		Quantity:  0,
+	}
+
+	total, err := service.GetQuantityByItemID(item)
+	if err != nil {
+		color.Redln("Error to GetQuantityByItemID", err)
+	}
+	color.Redln("total", total)
+
+	return strconv.Itoa(total), nil
 }
 
 func (c *CartManager) PrintLogs() {
@@ -153,8 +188,7 @@ func (c *CartManager) PrintLogs() {
 	fmt.Print("___________________\n\n")
 }
 
-func initCardService(db *sql.DB) *services.CartService {
+func InitCardService(db *sql.DB) *services.CartService {
 	repo := repository.NewSqliteCartRepo(db)
 	return services.NewCartService(repo)
-
 }

@@ -17,12 +17,16 @@ func NewCartService(repo repository.CartRepo) *CartService {
 	}
 }
 
-func (s *CartService) AddItem(item repository.CartItem) (int, error) {
-	return s.Repo.AddItem(item)
+func (s *CartService) GetQuantityByItemID(item repository.CartItem) (int, error) {
+	quantity, err := s.Repo.GetQuantityByItemID(item)
+	if err != nil {
+		return 0, err
+	}
+	return quantity, nil
 }
 
-func (s *CartService) GetQuantityByItemID(item repository.CartItem) (int, error) {
-	return s.Repo.GetQuantityByItemID(item)
+func (s *CartService) AddItem(item repository.CartItem) (int, error) {
+	return s.Repo.AddItem(item)
 }
 
 func (s *CartService) Increment(item repository.CartItem) (int, error) {
@@ -33,21 +37,6 @@ func (s *CartService) Decrement(item repository.CartItem) (int, error) {
 	return s.Repo.Decrement(item)
 }
 
-func (s *CartService) GetCartInfo(userID int64) (string, error) {
-	products, err := s.GetItemsByUserID(userID)
-	if err != nil {
-		return "", err
-	}
-	// var imageNames []string
-
-	// for _, product := range products {
-	// 	color.Redln("Product", product.Name, "Image ", product.Image)
-	// 	imageNames = append(imageNames, product.Image)
-	// }
-
-	return formatCartText(products), nil
-}
-
 func (s *CartService) GetItemsByUserID(userID int64) ([]*repository.CartProduct, error) {
 	products, err := s.Repo.GetItemsByUserID(userID)
 	if err != nil {
@@ -56,14 +45,14 @@ func (s *CartService) GetItemsByUserID(userID int64) ([]*repository.CartProduct,
 	return products, nil
 }
 
-func formatCartText(items []*repository.CartProduct) string {
+func (s *CartService) FormatCartText(items []*repository.CartProduct) string {
 	var sb strings.Builder
 	totalPrice := 0.0
 
 	for i, item := range items {
 		itemTotal := item.Price * float64(item.Quantity)
 		sb.WriteString(fmt.Sprintf("<b>%d</b>.%s\n   Количество: %d шт\n   Цена за 1 шт: %0.fруб.\n", i+1, item.Name, item.Quantity, item.Price))
-		sb.WriteString(fmt.Sprint("  ----------------------------------------------\n"))
+		sb.WriteString("  ----------------------------------------------\n")
 		totalPrice += itemTotal
 	}
 
