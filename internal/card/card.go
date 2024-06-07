@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+
+	db "github.com/Resolution-hash/shop_bot/internal/repository"
 	product "github.com/Resolution-hash/shop_bot/internal/repository/product"
 
 	"github.com/Resolution-hash/shop_bot/internal/services"
@@ -94,7 +96,7 @@ func (cm *CardManager) GetCartItemsByUserID(data string, userID int) error {
 }
 
 func (cm *CardManager) GetCardAll(data string) error {
-	db, err := product.SetupDatabase()
+	db, err := db.SetupDatabase()
 	if err != nil {
 		color.Redln(err)
 	}
@@ -151,24 +153,6 @@ func (cm *CardManager) PrintLogs() {
 	color.Yellowln("Image:", cm.CurrentCard.Image)
 	fmt.Print("___________________\n\n")
 }
-
-// func NewCard(products []repository.Product) *Card {
-// 	if len(products) > 0 {
-// 		return &Card{
-// 			ID:                products[0].ID,
-// 			Name:              products[0].Name,
-// 			Type:              products[0].Type,
-// 			Description:       products[0].Description,
-// 			Quantity:          0,
-// 			Price:             products[0].Price,
-// 			Image:             products[0].Image,
-// 			TotalCards:        len(products),
-// 			CurrentCardNumber: 0,
-// 			ProductList:       products,
-// 		}
-// 	}
-// 	return nil
-// }
 
 func NewCard(products []ProductInfo) *Card {
 	color.Redln(products)

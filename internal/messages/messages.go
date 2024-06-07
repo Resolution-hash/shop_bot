@@ -157,24 +157,30 @@ func GetReplyKeyboard() tgbotapi.ReplyKeyboardMarkup {
 
 func GetKeyboard(value string, session *sessions.Session, back interface{}) tgbotapi.InlineKeyboardMarkup {
 	switch value {
-
 	case "Магазин":
-		return tgbotapi.NewInlineKeyboardMarkup(
+		isAdmin := session.User.IsAdmin
+		rows := [][]tgbotapi.InlineKeyboardButton{
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("🕯️ Свечи ", "candles"),
-				tgbotapi.NewInlineKeyboardButtonData("🍷 Посуда для питья ", "drinkware"),
+				tgbotapi.NewInlineKeyboardButtonData("🕯️ Свечи", "candles"),
+				tgbotapi.NewInlineKeyboardButtonData("🍷 Посуда для питья", "drinkware"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("🍽️ Посуда для еды ", "dishware"),
-				tgbotapi.NewInlineKeyboardButtonData("🔍 Показать все ", "showAllItems"),
+				tgbotapi.NewInlineKeyboardButtonData("🍽️ Посуда для еды", "dishware"),
+				tgbotapi.NewInlineKeyboardButtonData("🔍 Показать все", "showAllItems"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("🛒 Перейти в корзину ", "Корзина"),
+				tgbotapi.NewInlineKeyboardButtonData("🛒 Перейти в корзину", "Корзина"),
 			),
-			// tgbotapi.NewInlineKeyboardRow(
-			// 	tgbotapi.NewInlineKeyboardButtonData("Показать все 🔍", "showAllItems"),
-			// ),
-		)
+		}
+
+		if isAdmin == 1 {
+			adminButton := tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("🛠️ Панель администратора", "adminPanel"),
+			)
+			rows = append(rows, adminButton)
+		}
+
+		return tgbotapi.NewInlineKeyboardMarkup(rows...)
 	case "Корзина":
 		if session.CartManager.CartIsEmpty {
 			return tgbotapi.NewInlineKeyboardMarkup(

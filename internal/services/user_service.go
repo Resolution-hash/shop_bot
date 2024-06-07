@@ -1,6 +1,6 @@
 package services
 
-import "github.com/Resolution-hash/shop_bot/internal/repository/user"
+import repository "github.com/Resolution-hash/shop_bot/internal/repository/user"
 
 type UserService struct {
 	repo repository.UserRepo
@@ -12,10 +12,10 @@ func NewUserService(repo repository.UserRepo) *UserService {
 	}
 }
 
-func (u *UserService) AddUser(user repository.User) error {
-	err := u.repo.AddUser(user)
+func (u *UserService) AddUser(user repository.User) (bool, error) {
+	isAdmin, err := u.repo.AddUser(user)
 	if err != nil {
-		return err
+		return false, err
 	}
-	return nil
+	return isAdmin, nil
 }

@@ -4,18 +4,17 @@ import (
 	"database/sql"
 
 	"github.com/Masterminds/squirrel"
-	_ "github.com/mattn/go-sqlite3"
 )
 
-type SqliteProductRepo struct {
+type PostgersProductRepo struct {
 	db *sql.DB
 }
 
-func NewSqliteProductRepo(db *sql.DB) *SqliteProductRepo {
-	return &SqliteProductRepo{db: db}
+func NewSqliteProductRepo(db *sql.DB) *PostgersProductRepo {
+	return &PostgersProductRepo{db: db}
 }
 
-func (repo *SqliteProductRepo) DeleteProduct(id int64) error {
+func (repo *PostgersProductRepo) DeleteProduct(id int64) error {
 	_, err := PrepareQueryProduct("delete", "products", id).(squirrel.DeleteBuilder).RunWith(repo.db).Exec()
 	if err != nil {
 		return err
@@ -23,7 +22,7 @@ func (repo *SqliteProductRepo) DeleteProduct(id int64) error {
 	return nil
 }
 
-func (repo *SqliteProductRepo) UpdateProduct(product Product) error {
+func (repo *PostgersProductRepo) UpdateProduct(product Product) error {
 	_, err := PrepareQueryProduct("update", "products", product).(squirrel.UpdateBuilder).RunWith(repo.db).Exec()
 	if err != nil {
 		return err
@@ -31,7 +30,7 @@ func (repo *SqliteProductRepo) UpdateProduct(product Product) error {
 	return nil
 }
 
-func (repo *SqliteProductRepo) CreateProduct(product Product) error {
+func (repo *PostgersProductRepo) CreateProduct(product Product) error {
 	_, err := PrepareQueryProduct("insert", "products", product).(squirrel.InsertBuilder).
 		RunWith(repo.db).
 		Exec()
@@ -42,7 +41,7 @@ func (repo *SqliteProductRepo) CreateProduct(product Product) error {
 	return nil
 }
 
-func (repo *SqliteProductRepo) GetAllProducts() ([]Product, error) {
+func (repo *PostgersProductRepo) GetAllProducts() ([]Product, error) {
 	rows, err := PrepareQueryProduct("select", "products", nil).(squirrel.SelectBuilder).
 		RunWith(repo.db).
 		Query()
@@ -64,7 +63,7 @@ func (repo *SqliteProductRepo) GetAllProducts() ([]Product, error) {
 	return products, nil
 }
 
-func (repo *SqliteProductRepo) GetProductsByType(productType string) ([]Product, error) {
+func (repo *PostgersProductRepo) GetProductsByType(productType string) ([]Product, error) {
 	rows, err := PrepareQueryProduct("selectByType", "products", productType).(squirrel.SelectBuilder).
 		RunWith(repo.db).
 		Query()
@@ -94,13 +93,13 @@ func PrepareQueryProduct(operation string, table string, data interface{}) squir
 			"description": product.Description,
 			"price":       product.Price,
 		}
-		return squirrel.Insert(table).SetMap(insertMap)
+		return squirrel.Insert(table).SetMap(insertMap).PlaceholderFormat(squirrel.Dollar)
 	case "select":
-		return squirrel.Select("*").From(table)
+		return squirrel.Select("*").From(table).PlaceholderFormat(squirrel.Dollar)
 	case "selectByType":
-		return squirrel.Select("*").From(table).Where(squirrel.Eq{"type": data.(string)})
+		return squirrel.Select("*").From(table).Where(squirrel.Eq{"type": data.(string)}).PlaceholderFormat(squirrel.Dollar)
 	case "selectByIDs":
-		return squirrel.Select("*").From(table).Where(squirrel.Eq{"id": data.([]int64)})
+		return squirrel.Select("*").From(table).Where(squirrel.Eq{"id": data.([]int64)}).PlaceholderFormat(squirrel.Dollar)
 	case "update":
 		product := (data).(Product)
 		updateMap := map[string]interface{}{
@@ -110,10 +109,10 @@ func PrepareQueryProduct(operation string, table string, data interface{}) squir
 			"price":       product.Price,
 		}
 
-		return squirrel.Update(table).SetMap(updateMap).Where(squirrel.Eq{"id": product.ID})
+		return squirrel.Update(table).SetMap(updateMap).Where(squirrel.Eq{"id": product.ID}).PlaceholderFormat(squirrel.Dollar)
 	case "delete":
 		productID := (data).(int64)
-		return squirrel.Delete(table).Where(squirrel.Eq{"id": productID})
+		return squirrel.Delete(table).Where(squirrel.Eq{"id": productID}).PlaceholderFormat(squirrel.Dollar)
 	default:
 		return nil
 	}

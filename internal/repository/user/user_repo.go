@@ -1,7 +1,7 @@
 package repository
 
 type UserRepo interface {
-	AddUser(User) error
+	AddUser(User) (bool,error)
 }
 
 type User struct {
@@ -9,4 +9,5 @@ type User struct {
 	First_name string
 	Last_name  string
 	User_name  string
+	IsAdmin    int
 }

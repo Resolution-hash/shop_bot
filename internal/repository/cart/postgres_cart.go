@@ -10,17 +10,17 @@ import (
 	"github.com/gookit/color"
 )
 
-type SqliteCartRepo struct {
+type PostgresCartRepo struct {
 	Db *sql.DB
 }
 
-func NewSqliteCartRepo(db *sql.DB) *SqliteCartRepo {
-	return &SqliteCartRepo{
+func NewSqliteCartRepo(db *sql.DB) *PostgresCartRepo {
+	return &PostgresCartRepo{
 		Db: db,
 	}
 }
 
-func (repo *SqliteCartRepo) GetQuantityByItemID(item CartItem) (int, error) {
+func (repo *PostgresCartRepo) GetQuantityByItemID(item CartItem) (int, error) {
 	var total int
 	err := prepareQueryProductCart("quantityByID", "cart", item).(squirrel.SelectBuilder).
 		RunWith(repo.Db).
@@ -31,7 +31,7 @@ func (repo *SqliteCartRepo) GetQuantityByItemID(item CartItem) (int, error) {
 	return total, nil
 }
 
-func (repo *SqliteCartRepo) AddItem(item CartItem) (int, error) {
+func (repo *PostgresCartRepo) AddItem(item CartItem) (int, error) {
 
 	tx, err := repo.Db.Begin()
 	if err != nil {
@@ -61,7 +61,7 @@ func (repo *SqliteCartRepo) AddItem(item CartItem) (int, error) {
 	return total, nil
 }
 
-func (repo *SqliteCartRepo) Increment(item CartItem) (int, error) {
+func (repo *PostgresCartRepo) Increment(item CartItem) (int, error) {
 	tx, err := repo.Db.Begin()
 	if err != nil {
 		return 0, err
@@ -92,7 +92,7 @@ func (repo *SqliteCartRepo) Increment(item CartItem) (int, error) {
 	return total, nil
 }
 
-func (repo *SqliteCartRepo) Decrement(item CartItem) (int, error) {
+func (repo *PostgresCartRepo) Decrement(item CartItem) (int, error) {
 	var total int
 	err := prepareQueryProductCart("quantityByID", "cart", item).(squirrel.SelectBuilder).
 		RunWith(repo.Db).
@@ -122,7 +122,7 @@ func (repo *SqliteCartRepo) Decrement(item CartItem) (int, error) {
 	return total, nil
 }
 
-func (repo *SqliteCartRepo) GetItemsByUserID(userID int64) ([]*CartProduct, error) {
+func (repo *PostgresCartRepo) GetItemsByUserID(userID int64) ([]*CartProduct, error) {
 
 	items := make([]*CartItem, 0)
 
@@ -188,7 +188,7 @@ func (repo *SqliteCartRepo) GetItemsByUserID(userID int64) ([]*CartProduct, erro
 	return cartProducts, nil
 }
 
-func (repo *SqliteCartRepo) DeleteItem(item CartItem) error {
+func (repo *PostgresCartRepo) DeleteItem(item CartItem) error {
 	_, err := prepareQueryProductCart("delete", "cart", item).(squirrel.DeleteBuilder).
 		RunWith(repo.Db).
 		Exec()
@@ -207,25 +207,25 @@ func prepareQueryProductCart(operation string, table string, data interface{}) s
 			"user_id":    cartItem.UserID,
 			"quantity":   cartItem.Quantity,
 		}
-		return squirrel.Insert(table).SetMap(insertMap)
+		return squirrel.Insert(table).SetMap(insertMap).PlaceholderFormat(squirrel.Dollar)
 	case "selectByID":
-		return squirrel.Select("product_id, quantity").From(table).Where(squirrel.Eq{"user_id": data.(int64)})
+		return squirrel.Select("product_id, quantity").From(table).Where(squirrel.Eq{"user_id": data.(int64)}).PlaceholderFormat(squirrel.Dollar)
 	case "increment":
 		cartItem := data.(CartItem)
 		color.Redln("productID:", cartItem.ProductID, "UserID:", cartItem.UserID)
-		return squirrel.Update(table).Set("quantity", squirrel.Expr("quantity + 1")).Where(squirrel.Eq{"product_id": cartItem.ProductID, "user_id": cartItem.UserID})
+		return squirrel.Update(table).Set("quantity", squirrel.Expr("quantity + 1")).Where(squirrel.Eq{"product_id": cartItem.ProductID, "user_id": cartItem.UserID}).PlaceholderFormat(squirrel.Dollar)
 	case "decrement":
 		cartItem := data.(CartItem)
-		return squirrel.Update(table).Set("quantity", squirrel.Expr("quantity - 1")).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID}).Where("quantity > 1")
+		return squirrel.Update(table).Set("quantity", squirrel.Expr("quantity - 1")).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID}).Where("quantity > 1").PlaceholderFormat(squirrel.Dollar)
 	case "quantityByID":
 		cartItem := data.(CartItem)
-		return squirrel.Select("SUM(quantity) as total_quantity").From(table).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID})
+		return squirrel.Select("SUM(quantity) as total_quantity").From(table).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID}).PlaceholderFormat(squirrel.Dollar)
 	case "isTableEmpty":
 		cartItem := data.(CartItem)
-		return squirrel.Select("COUNT(*)").From(table).Where(squirrel.Eq{"user_id": cartItem.UserID})
+		return squirrel.Select("COUNT(*)").From(table).Where(squirrel.Eq{"user_id": cartItem.UserID}).PlaceholderFormat(squirrel.Dollar)
 	case "delete":
 		cartItem := data.(CartItem)
-		return squirrel.Delete(table).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID})
+		return squirrel.Delete(table).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID}).PlaceholderFormat(squirrel.Dollar)
 	default:
 		return nil
 	}

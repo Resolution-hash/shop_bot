@@ -2,8 +2,8 @@ package repository
 
 type AdminRepo interface {
 	AddAdmin(int64) error
-	deleteAdmin(int64) error
-	IsAdmin(int64) bool
+	DeleteAdmin(int64) error
+	IsAdmin(int64) (bool, error)
 }
 
 // type Admin struct {

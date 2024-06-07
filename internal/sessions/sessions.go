@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Resolution-hash/shop_bot/config"
 	"github.com/Resolution-hash/shop_bot/internal/card"
-	repository "github.com/Resolution-hash/shop_bot/internal/repository/user"
+	db "github.com/Resolution-hash/shop_bot/internal/repository"
+	user "github.com/Resolution-hash/shop_bot/internal/repository/user"
 	"github.com/Resolution-hash/shop_bot/internal/services"
 	"github.com/gookit/color"
+	_ "github.com/lib/pq"
 )
 
 type Session struct {
-	User              *repository.User
+	User              *user.User
 	LastUserMessageID int
 	LastBotMessageID  int
 	PrevStep          string
@@ -38,10 +39,13 @@ func NewSessionManager() *SessionManager {
 	}
 }
 
-func (sm *SessionManager) CreateSession(userInfo *repository.User) *Session {
-	err := addUserToDB(userInfo)
+func (sm *SessionManager) CreateSession(userInfo *user.User) *Session {
+	isAdmin, err := addUserToDB(userInfo)
 	if err != nil {
-		color.Redln("The user has not been added to the database")
+		color.Redln("The user has not been added to the database:", err)
+	}
+	if isAdmin {
+		userInfo.IsAdmin = 1
 	}
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
@@ -69,6 +73,7 @@ func (sm *SessionManager) PrintLogs(userID int) {
 	color.Yellowln("First_name:", s.User.First_name)
 	color.Yellowln("Last_name:", s.User.Last_name)
 	color.Yellowln("User_name:", s.User.User_name)
+	color.Yellowln("IsAdmin:", s.User.IsAdmin)
 	color.Yellowln("LastUserMessageID:", s.LastUserMessageID)
 	color.Yellowln("LastBotMessageID:", s.LastBotMessageID)
 	color.Yellowln("PrevStep:", s.PrevStep)
@@ -78,37 +83,24 @@ func (sm *SessionManager) PrintLogs(userID int) {
 	fmt.Print("___________________\n\n")
 }
 
-func addUserToDB(user *repository.User) error {
-	db, err := SetupDatabase()
+func addUserToDB(user *user.User) (bool, error) {
+	db, err := db.SetupDatabase()
 	if err != nil {
 		color.Redln(err)
+		return false, err
 	}
 	defer db.Close()
 
 	svc := initUserService(db)
 
-	err = svc.AddUser(*user)
+	isAdmin, err := svc.AddUser(*user)
 	if err != nil {
-		return err
+		return false, err
 	}
-	return nil
+	return isAdmin, nil
 }
 
 func initUserService(db *sql.DB) services.UserService {
-	repo := repository.NewSqliteUserRepo(db)
+	repo := user.NewPostgresUserRepo(db)
 	return *services.NewUserService(repo)
-}
-
-func SetupDatabase() (*sql.DB, error) {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	db, err := sql.Open("sqlite3", cfg.DbUrl)
-	if err != nil {
-		fmt.Println("error to get cfg.DbUrl")
-		return nil, err
-	}
-	return db, nil
 }

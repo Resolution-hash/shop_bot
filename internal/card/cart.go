@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/Resolution-hash/shop_bot/config"
-	repository "github.com/Resolution-hash/shop_bot/internal/repository/cart"
+	cart "github.com/Resolution-hash/shop_bot/internal/repository/cart"
+	db "github.com/Resolution-hash/shop_bot/internal/repository"
+
 	"github.com/Resolution-hash/shop_bot/internal/services"
 	"github.com/gookit/color"
 )
@@ -27,8 +28,8 @@ func (c *CartManager) ChangeCartStatus(status bool) {
 	c.CartIsEmpty = status
 }
 
-func (c *CartManager) DeleteItem(item repository.CartItem) error {
-	db, err := SetupDatabase()
+func (c *CartManager) DeleteItem(item cart.CartItem) error {
+	db, err := db.SetupDatabase()
 	if err != nil {
 		color.Redln(err)
 	}
@@ -44,7 +45,7 @@ func (c *CartManager) DeleteItem(item repository.CartItem) error {
 }
 
 func (c *CartManager) GetCartItemsDetails(userID int64) (string, error) {
-	db, err := SetupDatabase()
+	db, err := db.SetupDatabase()
 	if err != nil {
 		color.Redln(err)
 	}
@@ -65,8 +66,8 @@ func (c *CartManager) GetCartItemsDetails(userID int64) (string, error) {
 	return service.FormatCartText(products), nil
 }
 
-func (c *CartManager) Increment(item repository.CartItem) error {
-	db, err := SetupDatabase()
+func (c *CartManager) Increment(item cart.CartItem) error {
+	db, err := db.SetupDatabase()
 	if err != nil {
 		color.Redln(err)
 	}
@@ -83,8 +84,8 @@ func (c *CartManager) Increment(item repository.CartItem) error {
 	return nil
 }
 
-func (c *CartManager) Decrement(item repository.CartItem) error {
-	db, err := SetupDatabase()
+func (c *CartManager) Decrement(item cart.CartItem) error {
+	db, err := db.SetupDatabase()
 	if err != nil {
 		color.Redln(err)
 	}
@@ -101,8 +102,8 @@ func (c *CartManager) Decrement(item repository.CartItem) error {
 	return nil
 }
 
-func (c *CartManager) AddToCart(item repository.CartItem) error {
-	db, err := SetupDatabase()
+func (c *CartManager) AddToCart(item cart.CartItem) error {
+	db, err := db.SetupDatabase()
 	if err != nil {
 		color.Redln(err)
 	}
@@ -120,7 +121,7 @@ func (c *CartManager) AddToCart(item repository.CartItem) error {
 }
 
 func (c *CartManager) GetQuantity(itemID int, userID int) (string, error) {
-	db, err := SetupDatabase()
+	db, err := db.SetupDatabase()
 	if err != nil {
 		color.Redln(err)
 	}
@@ -128,7 +129,7 @@ func (c *CartManager) GetQuantity(itemID int, userID int) (string, error) {
 
 	service := InitCartService(db)
 
-	item := repository.CartItem{
+	item := cart.CartItem{
 		ProductID: int64(itemID),
 		UserID:    int64(userID),
 		Quantity:  0,
@@ -152,20 +153,8 @@ func (c *CartManager) PrintLogs() {
 }
 
 func InitCartService(db *sql.DB) *services.CartService {
-	repo := repository.NewSqliteCartRepo(db)
+	repo := cart.NewSqliteCartRepo(db)
 	return services.NewCartService(repo)
 }
 
-func SetupDatabase() (*sql.DB, error) {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		return nil, err
-	}
 
-	db, err := sql.Open("sqlite3", cfg.DbUrl)
-	if err != nil {
-		fmt.Println("error to get cfg.DbUrl")
-		return nil, err
-	}
-	return db, nil
-}
