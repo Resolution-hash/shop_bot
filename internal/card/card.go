@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	db "github.com/Resolution-hash/shop_bot/internal/repository"
+	db "github.com/Resolution-hash/shop_bot/internal/repository/db"
 	product "github.com/Resolution-hash/shop_bot/internal/repository/product"
 
 	"github.com/Resolution-hash/shop_bot/internal/services"
@@ -47,7 +47,7 @@ func NewCardManager() *CardManager {
 }
 
 func (cm *CardManager) GetCardByType(data string) error {
-	db, err := product.SetupDatabase()
+	db, err := db.SetupDatabase()
 	if err != nil {
 		color.Redln(err)
 	}
@@ -72,7 +72,7 @@ func (cm *CardManager) GetCardByType(data string) error {
 }
 
 func (cm *CardManager) GetCartItemsByUserID(data string, userID int) error {
-	db, err := product.SetupDatabase()
+	db, err := db.SetupDatabase()
 	if err != nil {
 		color.Redln(err)
 	}

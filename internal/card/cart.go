@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	cart "github.com/Resolution-hash/shop_bot/internal/repository/cart"
-	db "github.com/Resolution-hash/shop_bot/internal/repository"
+	db "github.com/Resolution-hash/shop_bot/internal/repository/db"
 
 	"github.com/Resolution-hash/shop_bot/internal/services"
 	"github.com/gookit/color"
@@ -156,5 +156,3 @@ func InitCartService(db *sql.DB) *services.CartService {
 	repo := cart.NewSqliteCartRepo(db)
 	return services.NewCartService(repo)
 }
-
-

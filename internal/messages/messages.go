@@ -1,7 +1,10 @@
 package messages
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -9,6 +12,8 @@ import (
 	"github.com/Resolution-hash/shop_bot/internal/sessions"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/gookit/color"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 func SendMessage(bot *tgbotapi.BotAPI, userID int, text string, keyboard interface{}) int {
@@ -75,6 +80,56 @@ func SendMessageWithPhoto(bot *tgbotapi.BotAPI, userID int, text string, keyboar
 		Reader: file,
 		Size:   -1,
 	}
+	msg.Caption = text
+
+	if keyboard != nil {
+		switch k := keyboard.(type) {
+		case tgbotapi.InlineKeyboardMarkup:
+			msg.ReplyMarkup = k
+		case tgbotapi.ReplyKeyboardMarkup:
+			msg.ReplyMarkup = k
+		}
+	}
+	sentMsg, err := bot.Send(msg)
+	if err != nil {
+		color.Redln("Ошибка отправки сообщения:", err)
+		return 0
+	}
+	return sentMsg.MessageID
+}
+
+func SendMessageWithPhotoMinIO(bot *tgbotapi.BotAPI, userID int, text string, keyboard interface{}, imageName string) int {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	minioClient, err := minio.New(cfg.Endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
+		Secure: false,
+	})
+	if err != nil {
+		color.Redln("Error to connect MinIO")
+	}
+	objectName := imageName + ".jpg"
+	color.Redln(objectName)
+
+	object, err := minioClient.GetObject(context.Background(), cfg.Backet, objectName, minio.GetObjectOptions{})
+	if err != nil {
+		color.Redln("error to get object", err)
+	}
+	defer object.Close()
+
+	data, err := io.ReadAll(object)
+	if err != nil {
+		color.Redln("error reading data", err)
+	}
+
+	msg := tgbotapi.NewPhotoUpload(int64(userID), tgbotapi.FileReader{
+		Name:   objectName,
+		Reader: bytes.NewReader(data),
+		Size:   int64(len(data)),
+	})
 	msg.Caption = text
 
 	if keyboard != nil {
@@ -253,7 +308,6 @@ func GetKeyboard(value string, session *sessions.Session, back interface{}) tgbo
 				tgbotapi.NewInlineKeyboardButtonData("🛍️ Перейти в магазин", "Магазин"),
 			),
 		)
-
 	case "back":
 		return tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
@@ -268,6 +322,28 @@ func GetKeyboard(value string, session *sessions.Session, back interface{}) tgbo
 			),
 		)
 	}
+}
+
+func GetAdminKeyboard(session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Добавить товар", "addItem"),
+			tgbotapi.NewInlineKeyboardButtonData("Изменить товар", "updateItem"),
+			tgbotapi.NewInlineKeyboardButtonData("Удалить товар", "deleteItem"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Вернуться", "Магазин"),
+		),
+	)
+}
+
+func GetAdminCardSetting() tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("❌ Изменить данные", "addItem"),
+			tgbotapi.NewInlineKeyboardButtonData("✅ Подтвердить добавление", "addItem"),
+		),
+	)
 }
 
 func GetCardKeyboard(session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
@@ -322,5 +398,23 @@ func GetMessageText(step string) string {
 		return "🎉 Добро пожаловать в наш Магазин Керамики! \n\n🎨Мы рады видеть вас среди наших ценителей уникальной керамической продукции. Здесь вы найдете изысканные изделия, созданные для того, чтобы добавить уюта и красоты вашему дому."
 	default:
 		return "Такой команды нет. Пожалуйста, выберите из доступных команд"
+	}
+}
+
+func DeleteMessages(bot *tgbotapi.BotAPI, session sessions.Session, userId int) {
+	color.Redln("LastUserMessageID", session.LastUserMessageID)
+	color.Redln("LastBotMessageID", session.LastBotMessageID)
+
+	if session.LastUserMessageID != 0 {
+		color.Redln("delete user message", session.LastUserMessageID)
+
+		DeleteMessage(bot, session.LastUserMessageID, userId)
+		session.LastUserMessageID = 0
+	}
+	if session.LastBotMessageID != 0 {
+		color.Redln("delete bot message", session.LastBotMessageID)
+
+		DeleteMessage(bot, session.LastBotMessageID, userId)
+		session.LastBotMessageID = 0
 	}
 }

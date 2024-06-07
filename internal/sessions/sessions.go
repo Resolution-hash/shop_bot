@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/Resolution-hash/shop_bot/internal/card"
-	db "github.com/Resolution-hash/shop_bot/internal/repository"
+	db "github.com/Resolution-hash/shop_bot/internal/repository/db"
 	user "github.com/Resolution-hash/shop_bot/internal/repository/user"
 	"github.com/Resolution-hash/shop_bot/internal/services"
 	"github.com/gookit/color"

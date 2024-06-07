@@ -41,6 +41,17 @@ func (repo *PostgersProductRepo) CreateProduct(product Product) error {
 	return nil
 }
 
+func (repo *PostgersProductRepo) CreateTestProduct(product Product) error {
+	_, err := PrepareQueryProduct("insert", "test_products", product).(squirrel.InsertBuilder).
+		RunWith(repo.db).
+		Exec()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (repo *PostgersProductRepo) GetAllProducts() ([]Product, error) {
 	rows, err := PrepareQueryProduct("select", "products", nil).(squirrel.SelectBuilder).
 		RunWith(repo.db).

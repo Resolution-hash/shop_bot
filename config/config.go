@@ -18,6 +18,10 @@ type Config struct {
 	User             string
 	Password         string
 	Db_name          string
+	Backet           string
+	Endpoint         string
+	AccessKey        string
+	SecretKey        string
 }
 
 func LoadConfig() (*Config, error) {
@@ -37,6 +41,10 @@ func LoadConfig() (*Config, error) {
 		User:             os.Getenv("USER"),
 		Password:         os.Getenv("PASSWORD"),
 		Db_name:          os.Getenv("DB_NAME"),
+		Backet:           os.Getenv("BACKET"),
+		Endpoint:         os.Getenv("ENDPOINT"),
+		AccessKey:        os.Getenv("ACCESS_KEY"),
+		SecretKey:        os.Getenv("SECRET_KEY"),
 	}
 
 	return &config, nil
