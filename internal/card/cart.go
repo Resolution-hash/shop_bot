@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/Resolution-hash/shop_bot/config"
-	"github.com/Resolution-hash/shop_bot/internal/repository"
+	repository "github.com/Resolution-hash/shop_bot/internal/repository/cart"
 	"github.com/Resolution-hash/shop_bot/internal/services"
 	"github.com/gookit/color"
 )
@@ -28,7 +28,7 @@ func (c *CartManager) ChangeCartStatus(status bool) {
 }
 
 func (c *CartManager) DeleteItem(item repository.CartItem) error {
-	db, err := setupDatabase()
+	db, err := SetupDatabase()
 	if err != nil {
 		color.Redln(err)
 	}
@@ -44,7 +44,7 @@ func (c *CartManager) DeleteItem(item repository.CartItem) error {
 }
 
 func (c *CartManager) GetCartItemsDetails(userID int64) (string, error) {
-	db, err := setupDatabase()
+	db, err := SetupDatabase()
 	if err != nil {
 		color.Redln(err)
 	}
@@ -66,17 +66,10 @@ func (c *CartManager) GetCartItemsDetails(userID int64) (string, error) {
 }
 
 func (c *CartManager) Increment(item repository.CartItem) error {
-	cfg, err := config.LoadConfig()
+	db, err := SetupDatabase()
 	if err != nil {
-		return err
+		color.Redln(err)
 	}
-
-	db, err := sql.Open("sqlite3", cfg.DbUrl)
-	if err != nil {
-		color.Redln("error to get cfg.DbUrl")
-		return err
-	}
-
 	defer db.Close()
 
 	service := InitCartService(db)
@@ -91,17 +84,10 @@ func (c *CartManager) Increment(item repository.CartItem) error {
 }
 
 func (c *CartManager) Decrement(item repository.CartItem) error {
-	cfg, err := config.LoadConfig()
+	db, err := SetupDatabase()
 	if err != nil {
-		return err
+		color.Redln(err)
 	}
-
-	db, err := sql.Open("sqlite3", cfg.DbUrl)
-	if err != nil {
-		color.Redln("error to get cfg.DbUrl")
-		return err
-	}
-
 	defer db.Close()
 
 	service := InitCartService(db)
@@ -116,17 +102,10 @@ func (c *CartManager) Decrement(item repository.CartItem) error {
 }
 
 func (c *CartManager) AddToCart(item repository.CartItem) error {
-	cfg, err := config.LoadConfig()
+	db, err := SetupDatabase()
 	if err != nil {
-		return err
+		color.Redln(err)
 	}
-
-	db, err := sql.Open("sqlite3", cfg.DbUrl)
-	if err != nil {
-		color.Redln("error to get cfg.DbUrl")
-		return err
-	}
-
 	defer db.Close()
 
 	service := InitCartService(db)
@@ -141,17 +120,10 @@ func (c *CartManager) AddToCart(item repository.CartItem) error {
 }
 
 func (c *CartManager) GetQuantity(itemID int, userID int) (string, error) {
-	cfg, err := config.LoadConfig()
+	db, err := SetupDatabase()
 	if err != nil {
-		return "", err
+		color.Redln(err)
 	}
-
-	db, err := sql.Open("sqlite3", cfg.DbUrl)
-	if err != nil {
-		color.Redln("error to get cfg.DbUrl")
-		return "", err
-	}
-
 	defer db.Close()
 
 	service := InitCartService(db)
@@ -182,4 +154,18 @@ func (c *CartManager) PrintLogs() {
 func InitCartService(db *sql.DB) *services.CartService {
 	repo := repository.NewSqliteCartRepo(db)
 	return services.NewCartService(repo)
+}
+
+func SetupDatabase() (*sql.DB, error) {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := sql.Open("sqlite3", cfg.DbUrl)
+	if err != nil {
+		fmt.Println("error to get cfg.DbUrl")
+		return nil, err
+	}
+	return db, nil
 }

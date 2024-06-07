@@ -4,9 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	product "github.com/Resolution-hash/shop_bot/internal/repository/product"
 
-	"github.com/Resolution-hash/shop_bot/config"
-	"github.com/Resolution-hash/shop_bot/internal/repository"
 	"github.com/Resolution-hash/shop_bot/internal/services"
 	"github.com/gookit/color"
 )
@@ -46,9 +45,9 @@ func NewCardManager() *CardManager {
 }
 
 func (cm *CardManager) GetCardByType(data string) error {
-	db, err := setupDatabase()
+	db, err := product.SetupDatabase()
 	if err != nil {
-		log.Println(err)
+		color.Redln(err)
 	}
 	defer db.Close()
 
@@ -71,9 +70,9 @@ func (cm *CardManager) GetCardByType(data string) error {
 }
 
 func (cm *CardManager) GetCartItemsByUserID(data string, userID int) error {
-	db, err := setupDatabase()
+	db, err := product.SetupDatabase()
 	if err != nil {
-		log.Println(err)
+		color.Redln(err)
 	}
 	defer db.Close()
 
@@ -83,7 +82,7 @@ func (cm *CardManager) GetCartItemsByUserID(data string, userID int) error {
 	if err != nil {
 		log.Println(err)
 	}
-	
+
 	productInfos := make([]ProductInfo, len(products))
 	for i, product := range products {
 		productInfos[i] = product
@@ -95,9 +94,9 @@ func (cm *CardManager) GetCartItemsByUserID(data string, userID int) error {
 }
 
 func (cm *CardManager) GetCardAll(data string) error {
-	db, err := setupDatabase()
+	db, err := product.SetupDatabase()
 	if err != nil {
-		log.Println(err)
+		color.Redln(err)
 	}
 	defer db.Close()
 
@@ -223,21 +222,7 @@ func (c *Card) getTextTemplate() string {
 }
 
 func initProductService(db *sql.DB) *services.ProductService {
-	repo := repository.NewSqliteProductRepo(db)
+	repo := product.NewSqliteProductRepo(db)
 	service := services.NewProductService(repo)
 	return service
-}
-
-func setupDatabase() (*sql.DB, error) {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	db, err := sql.Open("sqlite3", cfg.DbUrl)
-	if err != nil {
-		fmt.Println("error to get cfg.DbUrl")
-		return nil, err
-	}
-	return db, nil
 }

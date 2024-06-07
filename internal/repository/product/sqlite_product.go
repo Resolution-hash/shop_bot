@@ -16,7 +16,7 @@ func NewSqliteProductRepo(db *sql.DB) *SqliteProductRepo {
 }
 
 func (repo *SqliteProductRepo) DeleteProduct(id int64) error {
-	_, err := prepareQueryProduct("delete", "products", id).(squirrel.DeleteBuilder).RunWith(repo.db).Exec()
+	_, err := PrepareQueryProduct("delete", "products", id).(squirrel.DeleteBuilder).RunWith(repo.db).Exec()
 	if err != nil {
 		return err
 	}
@@ -24,7 +24,7 @@ func (repo *SqliteProductRepo) DeleteProduct(id int64) error {
 }
 
 func (repo *SqliteProductRepo) UpdateProduct(product Product) error {
-	_, err := prepareQueryProduct("update", "products", product).(squirrel.UpdateBuilder).RunWith(repo.db).Exec()
+	_, err := PrepareQueryProduct("update", "products", product).(squirrel.UpdateBuilder).RunWith(repo.db).Exec()
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func (repo *SqliteProductRepo) UpdateProduct(product Product) error {
 }
 
 func (repo *SqliteProductRepo) CreateProduct(product Product) error {
-	_, err := prepareQueryProduct("insert", "products", product).(squirrel.InsertBuilder).
+	_, err := PrepareQueryProduct("insert", "products", product).(squirrel.InsertBuilder).
 		RunWith(repo.db).
 		Exec()
 	if err != nil {
@@ -43,7 +43,7 @@ func (repo *SqliteProductRepo) CreateProduct(product Product) error {
 }
 
 func (repo *SqliteProductRepo) GetAllProducts() ([]Product, error) {
-	rows, err := prepareQueryProduct("select", "products", nil).(squirrel.SelectBuilder).
+	rows, err := PrepareQueryProduct("select", "products", nil).(squirrel.SelectBuilder).
 		RunWith(repo.db).
 		Query()
 	if err != nil {
@@ -65,7 +65,7 @@ func (repo *SqliteProductRepo) GetAllProducts() ([]Product, error) {
 }
 
 func (repo *SqliteProductRepo) GetProductsByType(productType string) ([]Product, error) {
-	rows, err := prepareQueryProduct("selectByType", "products", productType).(squirrel.SelectBuilder).
+	rows, err := PrepareQueryProduct("selectByType", "products", productType).(squirrel.SelectBuilder).
 		RunWith(repo.db).
 		Query()
 	if err != nil {
@@ -84,7 +84,7 @@ func (repo *SqliteProductRepo) GetProductsByType(productType string) ([]Product,
 
 }
 
-func prepareQueryProduct(operation string, table string, data interface{}) squirrel.Sqlizer {
+func PrepareQueryProduct(operation string, table string, data interface{}) squirrel.Sqlizer {
 	switch operation {
 	case "insert":
 		product := (data).(Product)

@@ -1,7 +1,7 @@
 package repository
 
 type UserRepo interface {
-	AddUser() error
+	AddUser(User) error
 }
 
 type User struct {
@@ -10,4 +10,3 @@ type User struct {
 	Last_name  string
 	User_name  string
 }
-

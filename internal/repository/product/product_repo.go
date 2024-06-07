@@ -1,6 +1,12 @@
 package repository
 
-import "reflect"
+import (
+	"database/sql"
+	"fmt"
+	"reflect"
+
+	"github.com/Resolution-hash/shop_bot/config"
+)
 
 type Product struct {
 	ID          int64
@@ -40,4 +46,18 @@ type ProductRepo interface {
 	DeleteProduct(int64) error
 	GetAllProducts() ([]Product, error)
 	GetProductsByType(productType string) ([]Product, error)
+}
+
+func SetupDatabase() (*sql.DB, error) {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := sql.Open("sqlite3", cfg.DbUrl)
+	if err != nil {
+		fmt.Println("error to get cfg.DbUrl")
+		return nil, err
+	}
+	return db, nil
 }

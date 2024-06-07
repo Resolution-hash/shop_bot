@@ -10,18 +10,18 @@ type SqliteUserRepo struct {
 	Db *sql.DB
 }
 
-func NewSqliteRepo(db *sql.DB) *SqliteAdminRepo {
-	return &SqliteAdminRepo{
+func NewSqliteUserRepo(db *sql.DB) *SqliteUserRepo {
+	return &SqliteUserRepo{
 		Db: db,
 	}
 }
 
 func (repo *SqliteUserRepo) AddUser(user User) error {
-	_, err := prepareQueryUser("addAdmin", "users", user).(squirrel.InsertBuilder).
+	_, err := prepareQueryUser("addUser", "users", user).(squirrel.InsertBuilder).
 		RunWith(repo.Db).
 		Exec()
 	if err != nil {
-		return nil
+		return err
 	}
 	return nil
 }
@@ -35,7 +35,8 @@ func prepareQueryUser(operation string, table string, data interface{}) squirrel
 			"first_name": user.First_name,
 			"user_name":  user.User_name,
 		}
-		return squirrel.Insert(table).SetMap(insertMap)
+
+		return squirrel.Insert(table).SetMap(insertMap).Suffix("ON CONFLICT(id) DO REPLACE")
 	}
 	return nil
 }

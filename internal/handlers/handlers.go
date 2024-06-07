@@ -2,7 +2,8 @@ package handlers
 
 import (
 	"github.com/Resolution-hash/shop_bot/internal/messages"
-	"github.com/Resolution-hash/shop_bot/internal/repository"
+	cart "github.com/Resolution-hash/shop_bot/internal/repository/cart"
+	user "github.com/Resolution-hash/shop_bot/internal/repository/user"
 
 	"github.com/Resolution-hash/shop_bot/internal/sessions"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -203,7 +204,7 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 		currentCard := session.CardManager.CurrentCard
 
-		item := repository.CartItem{
+		item := cart.CartItem{
 			ProductID: currentCard.ID,
 			UserID:    int64(userInfo.UserID),
 			Quantity:  1,
@@ -227,7 +228,7 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		}(session)
 
 		currentCard := session.CardManager.CurrentCard
-		item := repository.CartItem{
+		item := cart.CartItem{
 			ProductID: currentCard.ID,
 			UserID:    int64(userInfo.UserID),
 		}
@@ -257,7 +258,7 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		}(session)
 
 		currentCard := session.CardManager.CurrentCard
-		item := repository.CartItem{
+		item := cart.CartItem{
 			ProductID: currentCard.ID,
 			UserID:    int64(userInfo.UserID),
 		}
@@ -288,7 +289,7 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		}(session)
 
 		currentCard := session.CardManager.CurrentCard
-		item := repository.CartItem{
+		item := cart.CartItem{
 			ProductID: currentCard.ID,
 			UserID:    int64(userInfo.UserID),
 			Quantity:  0,
@@ -317,24 +318,24 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	SessionManager.PrintLogs(userInfo.UserID)
 }
 
-func getUserInfo(update tgbotapi.Update) *repository.User {
+func getUserInfo(update tgbotapi.Update) *user.User {
 	if update.CallbackQuery != nil {
-		user := update.CallbackQuery.From
-		return &repository.User{
-			UserID:     user.ID,
-			First_name: user.FirstName,
-			Last_name:  user.LastName,
-			User_name:  user.UserName,
+		usr := update.CallbackQuery.From
+		return &user.User{
+			UserID:     usr.ID,
+			First_name: usr.FirstName,
+			Last_name:  usr.LastName,
+			User_name:  usr.UserName,
 		}
 
 	}
 
-	user := update.Message.From
-	return &repository.User{
-		UserID:     user.ID,
-		First_name: user.FirstName,
-		Last_name:  user.LastName,
-		User_name:  user.UserName,
+	usr := update.Message.From
+	return &user.User{
+		UserID:     usr.ID,
+		First_name: usr.FirstName,
+		Last_name:  usr.LastName,
+		User_name:  usr.UserName,
 	}
 }
 

@@ -1,11 +1,14 @@
 package sessions
 
 import (
+	"database/sql"
 	"fmt"
 	"sync"
 
+	"github.com/Resolution-hash/shop_bot/config"
 	"github.com/Resolution-hash/shop_bot/internal/card"
-	"github.com/Resolution-hash/shop_bot/internal/repository"
+	repository "github.com/Resolution-hash/shop_bot/internal/repository/user"
+	"github.com/Resolution-hash/shop_bot/internal/services"
 	"github.com/gookit/color"
 )
 
@@ -36,6 +39,10 @@ func NewSessionManager() *SessionManager {
 }
 
 func (sm *SessionManager) CreateSession(userInfo *repository.User) *Session {
+	err := addUserToDB(userInfo)
+	if err != nil {
+		color.Redln("The user has not been added to the database")
+	}
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 	sm.sessions[userInfo.UserID] = &Session{
@@ -69,5 +76,39 @@ func (sm *SessionManager) PrintLogs(userID int) {
 	color.Yellowln("CardManager:", s.CardManager)
 	color.Yellowln("CartManager:", s.CartManager)
 	fmt.Print("___________________\n\n")
+}
 
+func addUserToDB(user *repository.User) error {
+	db, err := SetupDatabase()
+	if err != nil {
+		color.Redln(err)
+	}
+	defer db.Close()
+
+	svc := initUserService(db)
+
+	err = svc.AddUser(*user)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func initUserService(db *sql.DB) services.UserService {
+	repo := repository.NewSqliteUserRepo(db)
+	return *services.NewUserService(repo)
+}
+
+func SetupDatabase() (*sql.DB, error) {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := sql.Open("sqlite3", cfg.DbUrl)
+	if err != nil {
+		fmt.Println("error to get cfg.DbUrl")
+		return nil, err
+	}
+	return db, nil
 }

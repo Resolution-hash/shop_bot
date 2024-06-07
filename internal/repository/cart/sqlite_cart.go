@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/Masterminds/squirrel"
+	product "github.com/Resolution-hash/shop_bot/internal/repository/product"
+
 	"github.com/gookit/color"
 )
 
@@ -144,7 +146,7 @@ func (repo *SqliteCartRepo) GetItemsByUserID(userID int64) ([]*CartProduct, erro
 		productIDs = append(productIDs, item.ProductID)
 	}
 
-	rows, err = prepareQueryProduct("selectByIDs", "products", productIDs).(squirrel.SelectBuilder).
+	rows, err = product.PrepareQueryProduct("selectByIDs", "products", productIDs).(squirrel.SelectBuilder).
 		RunWith(repo.Db).
 		Query()
 
@@ -153,9 +155,9 @@ func (repo *SqliteCartRepo) GetItemsByUserID(userID int64) ([]*CartProduct, erro
 	}
 	defer rows.Close()
 
-	products := make(map[int64]*Product, len(productIDs))
+	products := make(map[int64]*product.Product, len(productIDs))
 	for rows.Next() {
-		product := new(Product)
+		product := new(product.Product)
 		if err := rows.Scan(&product.ID, &product.Name, &product.Type, &product.Description, &product.Price, &product.Image); err != nil {
 			return nil, err
 		}

@@ -3,7 +3,7 @@ package services
 import (
 	"log"
 
-	"github.com/Resolution-hash/shop_bot/internal/repository"
+	"github.com/Resolution-hash/shop_bot/internal/repository/product"
 )
 
 type ProductService struct {
