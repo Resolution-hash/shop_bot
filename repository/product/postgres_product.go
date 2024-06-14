@@ -41,16 +41,16 @@ func (repo *PostgersProductRepo) CreateProduct(product Product) error {
 	return nil
 }
 
-func (repo *PostgersProductRepo) CreateTestProduct(product Product) error {
-	_, err := PrepareQueryProduct("insert", "test_products", product).(squirrel.InsertBuilder).
-		RunWith(repo.db).
-		Exec()
-	if err != nil {
-		return err
-	}
+// func (repo *PostgersProductRepo) CreateTestProduct(product Product) error {
+// 	_, err := PrepareQueryProduct("insert", "test_products", product).(squirrel.InsertBuilder).
+// 		RunWith(repo.db).
+// 		Exec()
+// 	if err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func (repo *PostgersProductRepo) GetAllProducts() ([]Product, error) {
 	rows, err := PrepareQueryProduct("select", "products", nil).(squirrel.SelectBuilder).
@@ -103,6 +103,7 @@ func PrepareQueryProduct(operation string, table string, data interface{}) squir
 			"type":        product.Type,
 			"description": product.Description,
 			"price":       product.Price,
+			"image":       product.Image,
 		}
 		return squirrel.Insert(table).SetMap(insertMap).PlaceholderFormat(squirrel.Dollar)
 	case "select":
@@ -118,6 +119,7 @@ func PrepareQueryProduct(operation string, table string, data interface{}) squir
 			"type":        product.Type,
 			"description": product.Description,
 			"price":       product.Price,
+			"image":       product.Image,
 		}
 
 		return squirrel.Update(table).SetMap(updateMap).Where(squirrel.Eq{"id": product.ID}).PlaceholderFormat(squirrel.Dollar)

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Masterminds/squirrel"
-	product "github.com/Resolution-hash/shop_bot/internal/repository/product"
+	product "github.com/Resolution-hash/shop_bot/repository/product"
 
 	"github.com/gookit/color"
 )
@@ -219,7 +219,7 @@ func prepareQueryProductCart(operation string, table string, data interface{}) s
 		return squirrel.Update(table).Set("quantity", squirrel.Expr("quantity - 1")).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID}).Where("quantity > 1").PlaceholderFormat(squirrel.Dollar)
 	case "quantityByID":
 		cartItem := data.(CartItem)
-		return squirrel.Select("SUM(quantity) as total_quantity").From(table).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID}).PlaceholderFormat(squirrel.Dollar)
+		return squirrel.Select("COALESCE(SUM(quantity), 0) as total_quantity").From(table).Where(squirrel.Eq{"user_id": cartItem.UserID, "product_id": cartItem.ProductID}).PlaceholderFormat(squirrel.Dollar)
 	case "isTableEmpty":
 		cartItem := data.(CartItem)
 		return squirrel.Select("COUNT(*)").From(table).Where(squirrel.Eq{"user_id": cartItem.UserID}).PlaceholderFormat(squirrel.Dollar)

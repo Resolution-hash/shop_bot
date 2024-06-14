@@ -3,7 +3,7 @@ package services
 import (
 	"log"
 
-	"github.com/Resolution-hash/shop_bot/internal/repository/product"
+	repository "github.com/Resolution-hash/shop_bot/repository/product"
 )
 
 type ProductService struct {
@@ -12,6 +12,15 @@ type ProductService struct {
 
 func NewProductService(repo repository.ProductRepo) *ProductService {
 	return &ProductService{repo: repo}
+}
+
+func (s *ProductService) CreateProduct(product repository.Product) error {
+	err := s.repo.CreateProduct(product)
+	if err != nil {
+		log.Println("Error getting all products: ", err)
+		return err
+	}
+	return nil
 }
 
 func (s *ProductService) GetAllProducts() ([]repository.Product, error) {

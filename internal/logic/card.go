@@ -1,14 +1,11 @@
-package card
+package logic
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 
-	db "github.com/Resolution-hash/shop_bot/internal/repository/db"
-	product "github.com/Resolution-hash/shop_bot/internal/repository/product"
+	db "github.com/Resolution-hash/shop_bot/repository/db"
 
-	"github.com/Resolution-hash/shop_bot/internal/services"
 	"github.com/gookit/color"
 )
 
@@ -53,7 +50,7 @@ func (cm *CardManager) GetCardByType(data string) error {
 	}
 	defer db.Close()
 
-	service := initProductService(db)
+	service := InitProductService(db)
 
 	products, err := service.GetProductByType(data)
 	if err != nil {
@@ -68,7 +65,6 @@ func (cm *CardManager) GetCardByType(data string) error {
 	cm.UpdateInfo(data, NewCard(productInfos))
 
 	return nil
-
 }
 
 func (cm *CardManager) GetCartItemsByUserID(data string, userID int) error {
@@ -102,7 +98,7 @@ func (cm *CardManager) GetCardAll(data string) error {
 	}
 	defer db.Close()
 
-	service := initProductService(db)
+	service := InitProductService(db)
 
 	products, err := service.GetAllProducts()
 	if err != nil {
@@ -203,10 +199,4 @@ func (c *Card) getTextTemplate() string {
 		return "В корзине нет товаров"
 	}
 	return fmt.Sprintf("Название: %s\n\nОписание: %s\n\nЦена: %0.f рублей\n%d/%d", c.Name, c.Description, c.Price, c.CurrentCardNumber+1, c.TotalCards)
-}
-
-func initProductService(db *sql.DB) *services.ProductService {
-	repo := product.NewSqliteProductRepo(db)
-	service := services.NewProductService(repo)
-	return service
 }

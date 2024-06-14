@@ -1,12 +1,12 @@
-package card
+package logic
 
 import (
 	"database/sql"
 	"fmt"
 	"strconv"
 
-	cart "github.com/Resolution-hash/shop_bot/internal/repository/cart"
-	db "github.com/Resolution-hash/shop_bot/internal/repository/db"
+	cart "github.com/Resolution-hash/shop_bot/repository/cart"
+	db "github.com/Resolution-hash/shop_bot/repository/db"
 
 	"github.com/Resolution-hash/shop_bot/internal/services"
 	"github.com/gookit/color"
@@ -43,6 +43,9 @@ func (c *CartManager) DeleteItem(item cart.CartItem) error {
 	}
 	return nil
 }
+
+
+
 
 func (c *CartManager) GetCartItemsDetails(userID int64) (string, error) {
 	db, err := db.SetupDatabase()

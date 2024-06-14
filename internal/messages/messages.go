@@ -2,18 +2,13 @@ package messages
 
 import (
 	"bytes"
-	"context"
-	"fmt"
 	"io"
 	"log"
-	"os"
 
-	"github.com/Resolution-hash/shop_bot/config"
 	"github.com/Resolution-hash/shop_bot/internal/sessions"
+	"github.com/Resolution-hash/shop_bot/internal/storage"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/gookit/color"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 func SendMessage(bot *tgbotapi.BotAPI, userID int, text string, keyboard interface{}) int {
@@ -59,74 +54,65 @@ func EditMessage(bot *tgbotapi.BotAPI, userID int, messageID int, text string) i
 	return sentMsg.MessageID
 }
 
-func SendMessageWithPhoto(bot *tgbotapi.BotAPI, userID int, text string, keyboard interface{}, imageName string) int {
-	cfg, err := config.LoadConfig()
+// func SendMessageWithPhoto(bot *tgbotapi.BotAPI, userID int, text string, keyboard interface{}, imageName string) int {
+// 	cfg, err := config.LoadConfig()
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+
+// 	path := cfg.ImagesUrl + "\\" + imageName + ".jpg"
+// 	color.Redln(path)
+
+// 	file, err := os.Open(path)
+// 	if err != nil {
+// 		fmt.Println("Error to upload file")
+// 	}
+// 	defer file.Close()
+
+// 	msg := tgbotapi.NewPhotoUpload(int64(userID), file.Name())
+// 	msg.File = tgbotapi.FileReader{
+// 		Name:   file.Name(),
+// 		Reader: file,
+// 		Size:   -1,
+// 	}
+// 	msg.Caption = text
+
+// 	if keyboard != nil {
+// 		switch k := keyboard.(type) {
+// 		case tgbotapi.InlineKeyboardMarkup:
+// 			msg.ReplyMarkup = k
+// 		case tgbotapi.ReplyKeyboardMarkup:
+// 			msg.ReplyMarkup = k
+// 		}
+// 	}
+// 	sentMsg, err := bot.Send(msg)
+// 	if err != nil {
+// 		color.Redln("Ошибка отправки сообщения:", err)
+// 		return 0
+// 	}
+// 	return sentMsg.MessageID
+// }
+
+func SendMessageWithPhotoMinIO(bot *tgbotapi.BotAPI, userID int, text string, keyboard interface{}, imageName string) (int, error) {
+
+	// objectName := imageName + ".jpg"
+
+	object, err := storage.MinIOGetPhoto(imageName)
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	path := cfg.ImagesUrl + "\\" + imageName + ".jpg"
-	color.Redln(path)
-
-	file, err := os.Open(path)
-	if err != nil {
-		fmt.Println("Error to upload file")
-	}
-	defer file.Close()
-
-	msg := tgbotapi.NewPhotoUpload(int64(userID), file.Name())
-	msg.File = tgbotapi.FileReader{
-		Name:   file.Name(),
-		Reader: file,
-		Size:   -1,
-	}
-	msg.Caption = text
-
-	if keyboard != nil {
-		switch k := keyboard.(type) {
-		case tgbotapi.InlineKeyboardMarkup:
-			msg.ReplyMarkup = k
-		case tgbotapi.ReplyKeyboardMarkup:
-			msg.ReplyMarkup = k
-		}
-	}
-	sentMsg, err := bot.Send(msg)
-	if err != nil {
-		color.Redln("Ошибка отправки сообщения:", err)
-		return 0
-	}
-	return sentMsg.MessageID
-}
-
-func SendMessageWithPhotoMinIO(bot *tgbotapi.BotAPI, userID int, text string, keyboard interface{}, imageName string) int {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	minioClient, err := minio.New(cfg.Endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
-		Secure: false,
-	})
-	if err != nil {
-		color.Redln("Error to connect MinIO")
-	}
-	objectName := imageName + ".jpg"
-	color.Redln(objectName)
-
-	object, err := minioClient.GetObject(context.Background(), cfg.Backet, objectName, minio.GetObjectOptions{})
-	if err != nil {
-		color.Redln("error to get object", err)
+		return 0, err
 	}
 	defer object.Close()
 
+	color.Redln("SendMessageWithPhotoMinIO, imageName:", imageName)
+
 	data, err := io.ReadAll(object)
 	if err != nil {
-		color.Redln("error reading data", err)
+		color.Redln("SendMessageWithPhotoMinIO, error reading data")
+		return 0, err
 	}
 
 	msg := tgbotapi.NewPhotoUpload(int64(userID), tgbotapi.FileReader{
-		Name:   objectName,
+		Name:   imageName,
 		Reader: bytes.NewReader(data),
 		Size:   int64(len(data)),
 	})
@@ -142,10 +128,9 @@ func SendMessageWithPhotoMinIO(bot *tgbotapi.BotAPI, userID int, text string, ke
 	}
 	sentMsg, err := bot.Send(msg)
 	if err != nil {
-		color.Redln("Ошибка отправки сообщения:", err)
-		return 0
+		return 0, err
 	}
-	return sentMsg.MessageID
+	return sentMsg.MessageID, nil
 }
 
 // func SendMessageWithPhotos(bot *tgbotapi.BotAPI, userID int, text string, keyboard interface{}, imageNames []string) int {
@@ -340,8 +325,8 @@ func GetAdminKeyboard(session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
 func GetAdminCardSetting() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("❌ Изменить данные", "addItem"),
-			tgbotapi.NewInlineKeyboardButtonData("✅ Подтвердить добавление", "addItem"),
+			tgbotapi.NewInlineKeyboardButtonData("❌ Отменить", "cancelChanges"),
+			tgbotapi.NewInlineKeyboardButtonData("✅ Подтвердить добавление", "confirmСhanges"),
 		),
 	)
 }

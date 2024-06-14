@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Resolution-hash/shop_bot/internal/repository/cart"
+	repository "github.com/Resolution-hash/shop_bot/repository/cart"
 )
 
 type CartService struct {

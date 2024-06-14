@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Resolution-hash/shop_bot/internal/card"
-	db "github.com/Resolution-hash/shop_bot/internal/repository/db"
-	user "github.com/Resolution-hash/shop_bot/internal/repository/user"
+	card "github.com/Resolution-hash/shop_bot/internal/logic"
 	"github.com/Resolution-hash/shop_bot/internal/services"
+	db "github.com/Resolution-hash/shop_bot/repository/db"
+	product "github.com/Resolution-hash/shop_bot/repository/product"
+	user "github.com/Resolution-hash/shop_bot/repository/user"
 	"github.com/gookit/color"
 	_ "github.com/lib/pq"
 )
@@ -21,11 +22,26 @@ type Session struct {
 	CurrentStep       string
 	CardManager       *card.CardManager
 	CartManager       *card.CartManager
+	TestProduct       product.Product
+}
+
+func (s *Session) UpdateTestProduct(prod interface{}) {
+	if p, ok := prod.(product.Product); ok {
+		color.Redln("UpdateTestProduct", p)
+		s.TestProduct = p
+	} else {
+		color.Redln("UpdateTestProduct", product.Product{})
+		s.TestProduct = product.Product{}
+	}
 }
 
 func (s *Session) UpdateStep(step string) {
 	s.PrevStep = s.CurrentStep
 	s.CurrentStep = step
+}
+
+func (s *Session) UpdateSettingStep(step string) {
+	s.User.SettingStep = step
 }
 
 type SessionManager struct {

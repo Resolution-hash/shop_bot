@@ -3,88 +3,12 @@ package handlers
 import (
 	"github.com/Resolution-hash/shop_bot/internal/logic"
 	"github.com/Resolution-hash/shop_bot/internal/messages"
-	cart "github.com/Resolution-hash/shop_bot/internal/repository/cart"
-	user "github.com/Resolution-hash/shop_bot/internal/repository/user"
-
 	"github.com/Resolution-hash/shop_bot/internal/sessions"
+	cart "github.com/Resolution-hash/shop_bot/repository/cart"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/gookit/color"
 )
-
-var SessionManager = sessions.NewSessionManager()
-
-func HandleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
-	data := update.Message.Text
-	userMessageID := update.Message.MessageID
-	userInfo := getUserInfo(update)
-
-	session, exists := SessionManager.GetSession(userInfo.UserID)
-	if !exists {
-		session = SessionManager.CreateSession(userInfo)
-	}
-	if data != "/start" {
-		session.LastUserMessageID = userMessageID
-	}
-	messages.DeleteMessages(bot, *session, userInfo.UserID)
-
-	var inlineKeyboard tgbotapi.InlineKeyboardMarkup
-	var botMessageID int
-	var messageText string
-	switch data {
-	case "/start":
-		inlineKeyboard = messages.GetKeyboard("start", session, nil)
-		messageText = messages.GetMessageText("start")
-
-		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-		session.LastBotMessageID = botMessageID
-	case "Магазин":
-		inlineKeyboard = messages.GetKeyboard(data, session, nil)
-		messageText = "Выберите категорию: "
-		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-		session.LastBotMessageID = botMessageID
-	case "Корзина":
-		messageText, err := session.CartManager.GetCartItemsDetails(int64(userInfo.UserID))
-		if err != nil {
-			color.Redln(err)
-		}
-
-		inlineKeyboard = messages.GetKeyboard(data, session, nil)
-		botMessageID := messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-		session.LastBotMessageID = botMessageID
-	default:
-		if session.User.SettingStep == "awaitsProductDataToUpload" {
-			color.Redln("++++")
-			product, err := logic.ParseProduct(data)
-			if err != nil {
-				color.Redln("error")
-				inlineKeyboard = messages.GetKeyboard("back", session, "addItem")
-				messageText = err.Error()
-				botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-				session.User.SettingStep = ""
-				session.LastBotMessageID = botMessageID
-				return
-			}
-
-			inlineKeyboard := messages.GetAdminCardSetting()
-			messageText = logic.GetTestText(product)
-			cardImage := product.Image
-
-			botMessageID = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
-			session.User.SettingStep = ""
-			session.LastBotMessageID = botMessageID
-
-		} else {
-			inlineKeyboard = messages.GetKeyboard(data, session, nil)
-			messageText = "Ошибка команды"
-			botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-			session.LastBotMessageID = botMessageID
-		}
-
-	}
-
-	SessionManager.PrintLogs(userInfo.UserID)
-
-}
 
 func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	data := update.CallbackQuery.Data
@@ -131,7 +55,13 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText = session.CardManager.GetCardText()
 		cardImage := session.CardManager.GetCardImage()
 
-		botMessageID = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
+		botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, session.PrevStep, err)
+			session.LastBotMessageID = botMessageID
+			return
+		}
 		session.LastBotMessageID = botMessageID
 	case "dishware":
 		session.UpdateStep(data)
@@ -144,7 +74,13 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText = session.CardManager.GetCardText()
 		cardImage := session.CardManager.GetCardImage()
 
-		botMessageID = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
+		botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, session.PrevStep, err)
+			session.LastBotMessageID = botMessageID
+			return
+		}
 		session.LastBotMessageID = botMessageID
 	case "drawings":
 		session.UpdateStep(data)
@@ -157,7 +93,13 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText = session.CardManager.GetCardText()
 		cardImage := session.CardManager.GetCardImage()
 
-		botMessageID = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
+		botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, session.PrevStep, err)
+			session.LastBotMessageID = botMessageID
+			return
+		}
 		session.LastBotMessageID = botMessageID
 	case "showAllItems":
 		session.UpdateStep(data)
@@ -170,7 +112,13 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText = session.CardManager.GetCardText()
 		cardImage := session.CardManager.GetCardImage()
 
-		botMessageID = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
+		botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, session.PrevStep, err)
+			session.LastBotMessageID = botMessageID
+			return
+		}
 		session.LastBotMessageID = botMessageID
 	case "changeCart":
 		session.UpdateStep(data)
@@ -182,7 +130,13 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		cardImage := session.CardManager.GetCardImage()
 		inlineKeyboard := messages.GetKeyboard(data, session, nil)
 
-		botMessageID = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
+		botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, session.PrevStep, err)
+			session.LastBotMessageID = botMessageID
+			return
+		}
 		session.LastBotMessageID = botMessageID
 	case "prev":
 		defer func(s *sessions.Session) {
@@ -203,7 +157,13 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText = session.CardManager.GetCardText()
 		cardImage := session.CardManager.GetCardImage()
 
-		botMessageID = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, keyboard, cardImage)
+		botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, keyboard, cardImage)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, session.PrevStep, err)
+			session.LastBotMessageID = botMessageID
+			return
+		}
 		session.LastBotMessageID = botMessageID
 	case "next":
 		defer func(s *sessions.Session) {
@@ -223,7 +183,13 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText = session.CardManager.GetCardText()
 		cardImage := session.CardManager.GetCardImage()
 
-		botMessageID = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, keyboard, cardImage)
+		botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, keyboard, cardImage)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, session.PrevStep, err)
+			session.LastBotMessageID = botMessageID
+			return
+		}
 		session.LastBotMessageID = botMessageID
 	case "addToCart":
 		session.UpdateStep(data)
@@ -249,7 +215,13 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText = session.CardManager.GetCardText()
 		cardImage := session.CardManager.GetCardImage()
 
-		botMessageID = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, keyboard, cardImage)
+		botMessageID, err = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, keyboard, cardImage)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, session.PrevStep, err)
+			session.LastBotMessageID = botMessageID
+			return
+		}
 		session.LastBotMessageID = botMessageID
 	case "increment":
 		defer func(s *sessions.Session) {
@@ -279,7 +251,13 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText = session.CardManager.GetCardText()
 		cardImage := session.CardManager.GetCardImage()
 
-		botMessageID = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, keyboard, cardImage)
+		botMessageID, err = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, keyboard, cardImage)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, session.PrevStep, err)
+			session.LastBotMessageID = botMessageID
+			return
+		}
 		session.LastBotMessageID = botMessageID
 	case "decrement":
 		defer func(s *sessions.Session) {
@@ -310,7 +288,13 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText = session.CardManager.GetCardText()
 		cardImage := session.CardManager.GetCardImage()
 
-		botMessageID = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, keyboard, cardImage)
+		botMessageID, err = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, keyboard, cardImage)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, session.PrevStep, err)
+			session.LastBotMessageID = botMessageID
+			return
+		}
 		session.LastBotMessageID = botMessageID
 	case "delete":
 		defer func(s *sessions.Session) {
@@ -341,40 +325,65 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText = session.CardManager.GetCardText()
 		cardImage := session.CardManager.GetCardImage()
 
-		botMessageID = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, keyboard, cardImage)
+		botMessageID, err = messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, keyboard, cardImage)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, session.PrevStep, err)
+			session.LastBotMessageID = botMessageID
+			return
+		}
 		session.LastBotMessageID = botMessageID
+
+	//ADMINS____
 	case "adminPanel":
 		messageText = "Панель администратора"
 		inlineKeyboard := messages.GetAdminKeyboard(session)
 		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
 		session.LastBotMessageID = botMessageID
 	case "addItem":
+		session.UpdateSettingStep("uploadProduct")
 		messageText := "Последоватальность действий для добавления карточки:\n1. Добавить изображение в MinIo(файловое хранилище)\n2. Написать данные для карточки (Название,тип,описание,цена,название загруженной картинка в MinIO)\n\nПример:\n\nКружка праздничная\ndrinkware\nОбъем: 450 мл\n599\ncup-4\n\nВАЖНО\n\nДоступные типы:\ndishware\ndrinkware\ncandles\n\nЕсли указать неправильный тип, карточка не появится в разделе"
 		inlineKeyboard := messages.GetKeyboard("back", session, "adminPanel")
 		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-		session.User.SettingStep = "awaitsProductDataToUpload"
+		session.LastBotMessageID = botMessageID
+	case "confirmСhanges":
+		color.Redln(session.TestProduct)
+		err := logic.CreateProduct(session.TestProduct)
+		if err != nil {
+			session.UpdateTestProduct("")
+			color.Redln(err)
+			err := RemovePhotoFromStorage(session.TestProduct.Image)
+			if err != nil {
+				color.Redln(err)
+			}
+			SendError(bot, session, "addItem", err)
+			session.LastBotMessageID = botMessageID
+			return
+		}
+		session.UpdateTestProduct("")
+
+		color.Greenln("product added")
+
+		messageText := "Товар добавлен"
+		inlineKeyboard := messages.GetKeyboard("back", session, "adminPanel")
+		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
+		session.UpdateSettingStep("")
+		session.LastBotMessageID = botMessageID
+	case "cancelChanges":
+		err := RemovePhotoFromStorage(session.TestProduct.Image)
+		if err != nil {
+			color.Redln(err)
+			err := RemovePhotoFromStorage(session.TestProduct.Image)
+			SendError(bot, session, "addItem", err)
+			session.LastBotMessageID = botMessageID
+			return
+		}
+
+		messageText := "Товар добавлен"
+		inlineKeyboard := messages.GetKeyboard("back", session, "adminPanel")
+		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
+		session.UpdateSettingStep("")
 		session.LastBotMessageID = botMessageID
 	}
 	SessionManager.PrintLogs(userInfo.UserID)
-}
-
-func getUserInfo(update tgbotapi.Update) *user.User {
-	if update.CallbackQuery != nil {
-		usr := update.CallbackQuery.From
-		return &user.User{
-			UserID:     usr.ID,
-			First_name: usr.FirstName,
-			Last_name:  usr.LastName,
-			User_name:  usr.UserName,
-		}
-
-	}
-
-	usr := update.Message.From
-	return &user.User{
-		UserID:     usr.ID,
-		First_name: usr.FirstName,
-		Last_name:  usr.LastName,
-		User_name:  usr.UserName,
-	}
 }

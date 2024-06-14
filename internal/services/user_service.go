@@ -1,6 +1,6 @@
 package services
 
-import repository "github.com/Resolution-hash/shop_bot/internal/repository/user"
+import repository "github.com/Resolution-hash/shop_bot/repository/user"
 
 type UserService struct {
 	repo repository.UserRepo

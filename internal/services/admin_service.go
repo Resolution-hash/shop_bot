@@ -1,6 +1,6 @@
 package services
 
-import repository "github.com/Resolution-hash/shop_bot/internal/repository/admin"
+import repository "github.com/Resolution-hash/shop_bot/repository/admin"
 
 type AdminService struct {
 	repo repository.AdminRepo

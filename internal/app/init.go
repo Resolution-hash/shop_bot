@@ -33,12 +33,12 @@ func StartBot(cfg *config.Config) {
 			color.Blueln("\n\n\n" + update.CallbackQuery.Data)
 			handlers.HandleCallback(bot, update)
 		}
-		if len(*update.Message.Photo) > 1 {
-			color.Blueln("\n\n\n" + "upload photo")
-			photos := *update.Message.Photo
-			photoSize := photos[len(photos)-1]
-			handlers.HandleUploadPhotos(bot, photoSize, update.Message.Caption)
-		}
+		// if len(*update.Message.Photo) > 1 {
+		// 	color.Blueln("\n\n\n" + "upload photo")
+		// 	photos := *update.Message.Photo
+		// 	photoSize := photos[len(photos)-1]
+		// 	handlers.HandleUploadPhotos(bot, photoSize, update.Message.Caption)
+		// }
 
 	}
 }
