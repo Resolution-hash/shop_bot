@@ -310,23 +310,42 @@ func GetKeyboard(value string, session *sessions.Session, back interface{}) tgbo
 }
 
 func GetAdminKeyboard(session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
+	if session.User.SettingStep == "changeItem" {
+		return tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("⏪", "prev"),
+				tgbotapi.NewInlineKeyboardButtonData("⏩", "next"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Изменить фото", "сhangePhoto"),
+				tgbotapi.NewInlineKeyboardButtonData("Изменить текст", "changeText"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("⬅️ Вернуться", "adminPanel"),
+			),
+		)
+	} else if session.User.SettingStep == "uploadProduct" {
+		return tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("❌ Отменить", "cancelChanges"),
+				tgbotapi.NewInlineKeyboardButtonData("✅ Подтвердить добавление", "confirmСhanges"),
+			),
+		)
+	} else if session.User.SettingStep == "adminPanel" {
+		return tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Добавить товар", "addItem"),
+				tgbotapi.NewInlineKeyboardButtonData("Изменить товар", "changeItem"),
+				tgbotapi.NewInlineKeyboardButtonData("Удалить товар", "deleteItem"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("⬅️ Вернуться", "Магазин"),
+			),
+		)
+	}
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Добавить товар", "addItem"),
-			tgbotapi.NewInlineKeyboardButtonData("Изменить товар", "updateItem"),
-			tgbotapi.NewInlineKeyboardButtonData("Удалить товар", "deleteItem"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("⬅️ Вернуться", "Магазин"),
-		),
-	)
-}
-
-func GetAdminCardSetting() tgbotapi.InlineKeyboardMarkup {
-	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("❌ Отменить", "cancelChanges"),
-			tgbotapi.NewInlineKeyboardButtonData("✅ Подтвердить добавление", "confirmСhanges"),
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Вернуться", "adminPanel"),
 		),
 	)
 }

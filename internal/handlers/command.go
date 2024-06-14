@@ -51,56 +51,7 @@ func HandleCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		botMessageID := messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
 		session.LastBotMessageID = botMessageID
 	default:
-		if session.User.SettingStep == "uploadProduct" {
-			color.Blueln("uploadProduct")
-
-			//Проверить, есть ли фото. Если есть, загрузить.
-			//Проверить данные карточки.
-			//Отправить сообщение с этими данными для подтверждения
-
-			if len(*update.Message.Photo) > 1 {
-				photos := *update.Message.Photo
-				photoSize := photos[len(photos)-1]
-
-				product, err := logic.ParseProduct(update.Message.Caption)
-				if err != nil {
-					color.Redln(err)
-					SendError(bot, session, "addItem", err)
-					return
-				}
-
-				objName, err := UploadPhotos(bot, photoSize)
-				if err != nil {
-					color.Redln(err)
-					SendError(bot, session, "addItem", err)
-					return
-				}
-				product.Image = objName
-				color.Redln("imageName:", product.Image)
-
-				session.UpdateTestProduct(product)
-
-				inlineKeyboard := messages.GetAdminCardSetting()
-				messageText = logic.GetTestText(product)
-
-				botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, inlineKeyboard, product.Image)
-				if err != nil {
-					color.Redln(err)
-					SendError(bot, session, "addItem", err)
-					session.User.SettingStep = ""
-					return
-				}
-				session.UpdateSettingStep("confirmСhanges")
-				session.LastBotMessageID = botMessageID
-			}
-
-		} else {
-			inlineKeyboard = messages.GetKeyboard(data, session, nil)
-			messageText = "Ошибка команды"
-			botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-			session.LastBotMessageID = botMessageID
-		}
-
+		handleAdminsAction(bot, update, session)
 	}
 
 	SessionManager.PrintLogs(userInfo.UserID)
@@ -134,4 +85,54 @@ func SendError(bot *tgbotapi.BotAPI, s *sessions.Session, callback string, err e
 	botMessageID := messages.SendMessage(bot, s.User.UserID, messageText, inlineKeyboard)
 	s.User.SettingStep = ""
 	s.LastBotMessageID = botMessageID
+}
+
+func handleAdminsAction(bot *tgbotapi.BotAPI, update tgbotapi.Update, session *sessions.Session) {
+	if session.User.SettingStep == "uploadProduct" {
+		color.Blueln("uploadProduct")
+
+		if len(*update.Message.Photo) > 1 {
+			photos := *update.Message.Photo
+			photoSize := photos[len(photos)-1]
+
+			product, err := logic.ParseProduct(update.Message.Caption)
+			if err != nil {
+				color.Redln(err)
+				SendError(bot, session, "addItem", err)
+				return
+			}
+
+			objName, err := UploadPhotos(bot, photoSize)
+			if err != nil {
+				color.Redln(err)
+				SendError(bot, session, "addItem", err)
+				return
+			}
+			product.Image = objName
+			color.Redln("imageName:", product.Image)
+
+			session.UpdateNewProduct(product)
+
+			inlineKeyboard := messages.GetAdminKeyboard(session)
+			messageText := logic.GetTestText(product)
+
+			botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, session.User.UserID, messageText, inlineKeyboard, product.Image)
+			if err != nil {
+				color.Redln(err)
+				SendError(bot, session, "addItem", err)
+				session.User.SettingStep = ""
+				return
+			}
+			session.UpdateSettingStep("confirmСhanges")
+			session.LastBotMessageID = botMessageID
+		}
+
+	} else if session.User.SettingStep == "uploadPhoto" {
+
+	} else {
+		inlineKeyboard := messages.GetKeyboard(update.Message.Text, session, nil)
+		messageText := "Ошибка команды"
+		botMessageID := messages.SendMessage(bot, session.User.UserID, messageText, inlineKeyboard)
+		session.LastBotMessageID = botMessageID
+	}
 }

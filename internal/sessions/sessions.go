@@ -22,16 +22,16 @@ type Session struct {
 	CurrentStep       string
 	CardManager       *card.CardManager
 	CartManager       *card.CartManager
-	TestProduct       product.Product
+	NewProduct       product.Product
 }
 
-func (s *Session) UpdateTestProduct(prod interface{}) {
+func (s *Session) UpdateNewProduct(prod interface{}) {
 	if p, ok := prod.(product.Product); ok {
 		color.Redln("UpdateTestProduct", p)
-		s.TestProduct = p
+		s.NewProduct = p
 	} else {
 		color.Redln("UpdateTestProduct", product.Product{})
-		s.TestProduct = product.Product{}
+		s.NewProduct = product.Product{}
 	}
 }
 
