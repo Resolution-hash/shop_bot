@@ -430,8 +430,6 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		inlineKeyboard := messages.GetKeyboard("back", session, "changeItem")
 		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
 		session.LastBotMessageID = botMessageID
-
-		session.UpdateSettingStep("")
 	case "deleteItems":
 		session.UpdateSettingStep("deleteItems")
 		err := session.CardManager.GetCardAll(data)
@@ -473,4 +471,128 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		color.Yellowln(session.User.SettingStep)
 	}
 	SessionManager.PrintLogs(userInfo.UserID)
+}
+func handleCartOperation(bot *tgbotapi.BotAPI, session *sessions.Session, operation string, operationFunc func(cart.CartItem) error) error {
+	defer func(s *sessions.Session) {
+		s.CardManager.PrintLogs()
+		s.CartManager.PrintLogs()
+	}(session)
+
+	currentCard := session.CardManager.CurrentCard
+	item := cart.CartItem{
+		ProductID: currentCard.ID,
+		UserID:    int64(session.User.UserID),
+	}
+
+	if operation == "delete" {
+		item.Quantity = 0
+	}
+
+	err := operationFunc(item)
+	if err != nil {
+		return err
+	}
+
+	prevStep := session.PrevStep
+	var keyboard tgbotapi.InlineKeyboardMarkup
+	if prevStep == "Корзина" {
+		keyboard = messages.GetKeyboard("changeCart", session, nil)
+	} else {
+		keyboard = messages.GetCardKeyboard(session)
+	}
+
+	messageText := session.CardManager.GetCardText()
+	cardImage := session.CardManager.GetCardImage()
+
+	botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, session.User.UserID, messageText, keyboard, cardImage)
+	if err != nil {
+		return err
+	}
+	session.LastBotMessageID = botMessageID
+
+	return nil
+}
+
+func handleStepByType(bot *tgbotapi.BotAPI, session *sessions.Session, data string) {
+	session.UpdateStep(data)
+	err := session.CardManager.GetCardByType(data)
+	if err != nil {
+		color.Redln(err)
+		SendError(bot, session, session.PrevStep, err)
+		return
+	}
+
+	inlineKeyboard := messages.GetCardKeyboard(session)
+	messageText := session.CardManager.GetCardText()
+	cardImage := session.CardManager.GetCardImage()
+
+	botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, session.User.UserID, messageText, inlineKeyboard, cardImage)
+	if err != nil {
+		color.Redln(err)
+		SendError(bot, session, session.PrevStep, err)
+		session.LastBotMessageID = botMessageID
+		return
+	}
+
+	session.LastBotMessageID = botMessageID
+}
+
+func handleStepAllType(bot *tgbotapi.BotAPI, session *sessions.Session, data string) {
+	session.UpdateStep(data)
+	err := session.CardManager.GetCardAll(data)
+	if err != nil {
+		color.Redln(err)
+		SendError(bot, session, session.PrevStep, err)
+		return
+	}
+
+	inlineKeyboard := messages.GetCardKeyboard(session)
+	messageText := session.CardManager.GetCardText()
+	cardImage := session.CardManager.GetCardImage()
+
+	botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, session.User.UserID, messageText, inlineKeyboard, cardImage)
+	if err != nil {
+		color.Redln(err)
+		SendError(bot, session, session.PrevStep, err)
+		session.LastBotMessageID = botMessageID
+		return
+	}
+	session.LastBotMessageID = botMessageID
+}
+
+func handleCardNavigation(bot *tgbotapi.BotAPI, session *sessions.Session, data string) {
+	defer func(s *sessions.Session) {
+		s.CardManager.PrintLogs()
+		s.CartManager.PrintLogs()
+	}(session)
+
+	color.Blueln(data)
+	if data == "prev" {
+		session.CardManager.PrevCard()
+	} else {
+		session.CardManager.NextCard()
+	}
+
+	prevStep := session.PrevStep
+
+	var keyboard tgbotapi.InlineKeyboardMarkup
+	if prevStep == "Корзина" {
+		keyboard = messages.GetKeyboard("changeCart", session, nil)
+	} else if session.User.SettingStep != "" {
+		keyboard = messages.GetAdminKeyboard(session)
+	} else {
+		keyboard = messages.GetCardKeyboard(session)
+	}
+
+	messageText := session.CardManager.GetCardText()
+	cardImage := session.CardManager.GetCardImage()
+
+	botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, session.User.UserID, messageText, keyboard, cardImage)
+	if err != nil {
+		color.Redln(err)
+		SendError(bot, session, session.PrevStep, err)
+		session.LastBotMessageID = botMessageID
+		return
+	}
+	session.LastBotMessageID = botMessageID
 }

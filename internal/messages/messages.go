@@ -336,6 +336,8 @@ func GetAdminKeyboard(session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("Добавить товар", "addItem"),
 				tgbotapi.NewInlineKeyboardButtonData("Изменить товары", "changeItem"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("Удалить товары", "deleteItems"),
 			),
 			tgbotapi.NewInlineKeyboardRow(

@@ -15,7 +15,7 @@ import (
 func ParseProduct(data string) (product.Product, error) {
 	lines := strings.Split(data, "\n")
 	if len(lines) != 4 {
-		return product.Product{}, errors.New("Неверное заполнения данных карточки")
+		return product.Product{}, errors.New("Ошибка заполнения данных")
 	}
 
 	price, err := strconv.ParseFloat(strings.TrimSpace(lines[3]), 64)
