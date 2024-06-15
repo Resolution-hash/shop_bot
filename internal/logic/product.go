@@ -15,12 +15,12 @@ import (
 func ParseProduct(data string) (product.Product, error) {
 	lines := strings.Split(data, "\n")
 	if len(lines) != 4 {
-		return product.Product{}, errors.New("неверный формат. Строк должно быть 5")
+		return product.Product{}, errors.New("Неверное заполнения данных карточки")
 	}
 
 	price, err := strconv.ParseFloat(strings.TrimSpace(lines[3]), 64)
 	if err != nil {
-		return product.Product{}, errors.New("ошибка конвертации цены")
+		return product.Product{}, errors.New("Ошибка конвертации цены")
 	}
 
 	product := product.Product{

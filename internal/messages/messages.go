@@ -318,7 +318,7 @@ func GetAdminKeyboard(session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
 			),
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("Изменить фото", "сhangePhoto"),
-				tgbotapi.NewInlineKeyboardButtonData("Изменить текст", "changeText"),
+				tgbotapi.NewInlineKeyboardButtonData("Изменить текст", "сhangeText"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("⬅️ Вернуться", "adminPanel"),
@@ -335,11 +335,24 @@ func GetAdminKeyboard(session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
 		return tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("Добавить товар", "addItem"),
-				tgbotapi.NewInlineKeyboardButtonData("Изменить товар", "changeItem"),
-				tgbotapi.NewInlineKeyboardButtonData("Удалить товар", "deleteItem"),
+				tgbotapi.NewInlineKeyboardButtonData("Изменить товары", "changeItem"),
+				tgbotapi.NewInlineKeyboardButtonData("Удалить товары", "deleteItems"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("⬅️ Вернуться", "Магазин"),
+			),
+		)
+	} else if session.User.SettingStep == "deleteItems" {
+		return tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("⏪", "prev"),
+				tgbotapi.NewInlineKeyboardButtonData("⏩", "next"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Удалить товар", "deleteProduct"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("⬅️ Вернуться", "adminPanel"),
 			),
 		)
 	}

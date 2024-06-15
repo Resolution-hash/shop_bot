@@ -5,6 +5,7 @@ import (
 	"log"
 
 	db "github.com/Resolution-hash/shop_bot/repository/db"
+	repository "github.com/Resolution-hash/shop_bot/repository/product"
 
 	"github.com/gookit/color"
 )
@@ -88,7 +89,57 @@ func (cm *CardManager) GetCartItemsByUserID(data string, userID int) error {
 	cm.UpdateInfo(data, NewCard(productInfos))
 
 	return nil
+}
 
+func (cm *CardManager) UpdateCardImage(product repository.Product) error {
+	db, err := db.SetupDatabase()
+	if err != nil {
+		color.Redln(err)
+	}
+	defer db.Close()
+
+	service := InitProductService(db)
+
+	err = service.UpdateProductImage(product)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return nil
+}
+
+func (cm *CardManager) DeleteCard(ID int64) error {
+	db, err := db.SetupDatabase()
+	if err != nil {
+		color.Redln(err)
+	}
+	defer db.Close()
+
+	service := InitProductService(db)
+
+	err = service.DeleteProduct(ID)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return nil
+}
+
+func (cm *CardManager) UpdateCardText(product repository.Product) error {
+	db, err := db.SetupDatabase()
+	if err != nil {
+		color.Redln(err)
+	}
+	defer db.Close()
+
+	service := InitProductService(db)
+
+	err = service.UpdateProductText(product)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return nil
 }
 
 func (cm *CardManager) GetCardAll(data string) error {

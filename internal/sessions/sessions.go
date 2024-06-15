@@ -22,7 +22,7 @@ type Session struct {
 	CurrentStep       string
 	CardManager       *card.CardManager
 	CartManager       *card.CartManager
-	NewProduct       product.Product
+	NewProduct        product.Product
 }
 
 func (s *Session) UpdateNewProduct(prod interface{}) {

@@ -1,8 +1,6 @@
 package services
 
 import (
-	"log"
-
 	repository "github.com/Resolution-hash/shop_bot/repository/product"
 )
 
@@ -17,7 +15,30 @@ func NewProductService(repo repository.ProductRepo) *ProductService {
 func (s *ProductService) CreateProduct(product repository.Product) error {
 	err := s.repo.CreateProduct(product)
 	if err != nil {
-		log.Println("Error getting all products: ", err)
+		return err
+	}
+	return nil
+}
+
+func (s *ProductService) DeleteProduct(ID int64) error {
+	err := s.repo.DeleteProduct(ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *ProductService) UpdateProductImage(product repository.Product) error {
+	err := s.repo.UpdateProductImage(product)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *ProductService) UpdateProductText(product repository.Product) error {
+	err := s.repo.UpdateProductText(product)
+	if err != nil {
 		return err
 	}
 	return nil
@@ -26,7 +47,6 @@ func (s *ProductService) CreateProduct(product repository.Product) error {
 func (s *ProductService) GetAllProducts() ([]repository.Product, error) {
 	products, err := s.repo.GetAllProducts()
 	if err != nil {
-		log.Println("Error getting all products: ", err)
 		return nil, err
 	}
 	return products, nil
@@ -35,7 +55,6 @@ func (s *ProductService) GetAllProducts() ([]repository.Product, error) {
 func (s *ProductService) GetProductByType(productType string) ([]repository.Product, error) {
 	products, err := s.repo.GetProductsByType(productType)
 	if err != nil {
-		log.Println("Error getting all products: ", err)
 		return nil, err
 	}
 	return products, nil

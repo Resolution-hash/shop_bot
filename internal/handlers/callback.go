@@ -348,6 +348,7 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		inlineKeyboard := messages.GetAdminKeyboard(session)
 		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
 		session.LastBotMessageID = botMessageID
+		session.UpdateSettingStep("")
 	case "addItem":
 		session.UpdateSettingStep("uploadProduct")
 		messageText := "Добавитьте фото и заполните карточку по примеру\nПример:\nКружка праздничная\ndrinkware\nОбъем: 450 мл\n599\n\nДоступные типы для карточке:\ndishware\ndrinkware\ncandles\n"
@@ -375,8 +376,9 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		messageText := "Товар добавлен"
 		inlineKeyboard := messages.GetKeyboard("back", session, "adminPanel")
 		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-		session.UpdateSettingStep("")
 		session.LastBotMessageID = botMessageID
+		session.UpdateSettingStep("")
+
 	case "cancelChanges":
 		err := RemovePhotoFromStorage(session.NewProduct.Image)
 		if err != nil {
@@ -387,11 +389,12 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			return
 		}
 
-		messageText := "Товар добавлен"
+		messageText := "Изменения отменены"
 		inlineKeyboard := messages.GetKeyboard("back", session, "adminPanel")
 		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
-		session.UpdateSettingStep("")
 		session.LastBotMessageID = botMessageID
+		session.UpdateSettingStep("")
+
 	case "changeItem":
 		session.UpdateSettingStep("changeItem")
 		err := session.CardManager.GetCardAll(data)
@@ -406,18 +409,68 @@ func HandleCallback(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
 		if err != nil {
 			color.Redln(err)
-			SendError(bot, session, session.PrevStep, err)
+			SendError(bot, session, "adminPanel", err)
 			session.LastBotMessageID = botMessageID
+			session.UpdateSettingStep("")
 			return
 		}
 		session.LastBotMessageID = botMessageID
 	case "сhangePhoto":
-		session.UpdateSettingStep("uploadPhoto")
+		session.UpdateSettingStep("changePhoto")
 
 		messageText := "Загрузите изображение формата jpeg."
 		inlineKeyboard := messages.GetKeyboard("back", session, "adminPanel")
 		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
 		session.LastBotMessageID = botMessageID
+		session.UpdateSettingStep("")
+	case "сhangeText":
+		session.UpdateSettingStep("сhangeText")
+
+		messageText := "Заполните карточку по примеру\nПример:\nКружка праздничная\ndrinkware\nОбъем: 450 мл\n599\n\nДоступные типы для карточке:\ndishware\ndrinkware\ncandles\n"
+		inlineKeyboard := messages.GetKeyboard("back", session, "changeItem")
+		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
+		session.LastBotMessageID = botMessageID
+
+		session.UpdateSettingStep("")
+	case "deleteItems":
+		session.UpdateSettingStep("deleteItems")
+		err := session.CardManager.GetCardAll(data)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, "adminPanel", err)
+			session.LastBotMessageID = botMessageID
+			session.UpdateSettingStep("")
+			return
+		}
+
+		inlineKeyboard := messages.GetAdminKeyboard(session)
+		messageText = session.CardManager.GetCardText()
+		cardImage := session.CardManager.GetCardImage()
+
+		botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, userInfo.UserID, messageText, inlineKeyboard, cardImage)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, "adminPanel", err)
+			session.LastBotMessageID = botMessageID
+			session.UpdateSettingStep("")
+			return
+		}
+		session.LastBotMessageID = botMessageID
+
+	case "deleteProduct":
+		session.UpdateSettingStep("")
+		err := session.CardManager.DeleteCard(session.CardManager.CurrentCard.ID)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, "deleteItems", err)
+			session.LastBotMessageID = botMessageID
+			return
+		}
+		inlineKeyboard := messages.GetKeyboard("back", session, "deleteItems")
+		messageText := "Товар успешно удален"
+		botMessageID = messages.SendMessage(bot, userInfo.UserID, messageText, inlineKeyboard)
+		session.LastBotMessageID = botMessageID
+		color.Yellowln(session.User.SettingStep)
 	}
 	SessionManager.PrintLogs(userInfo.UserID)
 }

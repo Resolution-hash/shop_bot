@@ -39,6 +39,8 @@ func IsEmpty(v interface{}) bool {
 type ProductRepo interface {
 	CreateProduct(Product) error
 	UpdateProduct(Product) error
+	UpdateProductImage(Product) error
+	UpdateProductText(Product) error
 	DeleteProduct(int64) error
 	GetAllProducts() ([]Product, error)
 	GetProductsByType(productType string) ([]Product, error)

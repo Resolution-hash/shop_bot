@@ -30,6 +30,22 @@ func (repo *PostgersProductRepo) UpdateProduct(product Product) error {
 	return nil
 }
 
+func (repo *PostgersProductRepo) UpdateProductImage(product Product) error {
+	_, err := PrepareQueryProduct("updateImage", "products", product).(squirrel.UpdateBuilder).RunWith(repo.db).Exec()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (repo *PostgersProductRepo) UpdateProductText(product Product) error {
+	_, err := PrepareQueryProduct("updateProductText", "products", product).(squirrel.UpdateBuilder).RunWith(repo.db).Exec()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (repo *PostgersProductRepo) CreateProduct(product Product) error {
 	_, err := PrepareQueryProduct("insert", "products", product).(squirrel.InsertBuilder).
 		RunWith(repo.db).
@@ -121,7 +137,21 @@ func PrepareQueryProduct(operation string, table string, data interface{}) squir
 			"price":       product.Price,
 			"image":       product.Image,
 		}
-
+		return squirrel.Update(table).SetMap(updateMap).Where(squirrel.Eq{"id": product.ID}).PlaceholderFormat(squirrel.Dollar)
+	case "updateImage":
+		product := (data).(Product)
+		updateMap := map[string]interface{}{
+			"image": product.Image,
+		}
+		return squirrel.Update(table).SetMap(updateMap).Where(squirrel.Eq{"id": product.ID}).PlaceholderFormat(squirrel.Dollar)
+	case "updateProductText":
+		product := (data).(Product)
+		updateMap := map[string]interface{}{
+			"name":        product.Name,
+			"type":        product.Type,
+			"description": product.Description,
+			"price":       product.Price,
+		}
 		return squirrel.Update(table).SetMap(updateMap).Where(squirrel.Eq{"id": product.ID}).PlaceholderFormat(squirrel.Dollar)
 	case "delete":
 		productID := (data).(int64)

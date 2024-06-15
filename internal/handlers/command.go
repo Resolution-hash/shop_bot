@@ -1,8 +1,12 @@
 package handlers
 
 import (
+	"errors"
+
 	"github.com/Resolution-hash/shop_bot/internal/logic"
 	"github.com/Resolution-hash/shop_bot/internal/messages"
+	"github.com/Resolution-hash/shop_bot/internal/storage"
+	product "github.com/Resolution-hash/shop_bot/repository/product"
 	user "github.com/Resolution-hash/shop_bot/repository/user"
 
 	"github.com/Resolution-hash/shop_bot/internal/sessions"
@@ -88,10 +92,11 @@ func SendError(bot *tgbotapi.BotAPI, s *sessions.Session, callback string, err e
 }
 
 func handleAdminsAction(bot *tgbotapi.BotAPI, update tgbotapi.Update, session *sessions.Session) {
-	if session.User.SettingStep == "uploadProduct" {
+	switch session.User.SettingStep {
+	case "uploadProduct":
 		color.Blueln("uploadProduct")
 
-		if len(*update.Message.Photo) > 1 {
+		if update.Message.Photo != nil {
 			photos := *update.Message.Photo
 			photoSize := photos[len(photos)-1]
 
@@ -99,6 +104,7 @@ func handleAdminsAction(bot *tgbotapi.BotAPI, update tgbotapi.Update, session *s
 			if err != nil {
 				color.Redln(err)
 				SendError(bot, session, "addItem", err)
+				session.User.SettingStep = ""
 				return
 			}
 
@@ -106,6 +112,7 @@ func handleAdminsAction(bot *tgbotapi.BotAPI, update tgbotapi.Update, session *s
 			if err != nil {
 				color.Redln(err)
 				SendError(bot, session, "addItem", err)
+				session.User.SettingStep = ""
 				return
 			}
 			product.Image = objName
@@ -125,14 +132,95 @@ func handleAdminsAction(bot *tgbotapi.BotAPI, update tgbotapi.Update, session *s
 			}
 			session.UpdateSettingStep("confirmСhanges")
 			session.LastBotMessageID = botMessageID
+		} else {
+			inlineKeyboard := messages.GetKeyboard("back", session, "adminPanel")
+			messageText := "Фотография не добавлена"
+			botMessageID := messages.SendMessage(bot, session.User.UserID, messageText, inlineKeyboard)
+			session.LastBotMessageID = botMessageID
+		}
+	case "changePhoto":
+		color.Blueln("changePhoto")
+		if len(*update.Message.Photo) > 1 {
+			photos := *update.Message.Photo
+			photoSize := photos[len(photos)-1]
+
+			objName, err := UploadPhotos(bot, photoSize)
+			if err != nil {
+				color.Redln(err)
+				session.UpdateSettingStep("")
+				SendError(bot, session, "adminPanel", err)
+				return
+			}
+			color.Redln("changePhoto, photo is downloaded:", objName)
+			color.Redln("imageName:", objName)
+
+			currentCard := session.CardManager.CurrentCard
+			product := product.Product{
+				ID:    currentCard.ID,
+				Image: objName,
+			}
+
+			err = session.CardManager.UpdateCardImage(product)
+			if err != nil {
+				session.UpdateSettingStep("")
+
+				minioErr := storage.MinIORemovePhoto(objName)
+				if minioErr != nil {
+					errorMessage := err.Error() + minioErr.Error()
+					color.Redln(errorMessage)
+					SendError(bot, session, "adminPanel", errors.New(errorMessage))
+					return
+				}
+
+				color.Redln(err)
+				SendError(bot, session, "adminPanel", err)
+				return
+			}
+
+			session.UpdateSettingStep("")
+			inlineKeyboard := messages.GetKeyboard("back", session, "changeItem")
+			messageText := "Изображения успешно изменено"
+			botMessageID, err := messages.SendMessageWithPhotoMinIO(bot, session.User.UserID, messageText, inlineKeyboard, objName)
+			if err != nil {
+				color.Redln(err)
+				SendError(bot, session, "adminPanel", err)
+				return
+			}
+			session.LastBotMessageID = botMessageID
+		}
+	case "сhangeText":
+		session.UpdateSettingStep("")
+		data, err := logic.ParseProduct(update.Message.Text)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, "changeItem", err)
+			return
+		}
+		currentCard := session.CardManager.CurrentCard
+		product := product.Product{
+			ID:          currentCard.ID,
+			Name:        data.Name,
+			Type:        data.Type,
+			Description: data.Description,
+			Price:       data.Price,
+		}
+		err = session.CardManager.UpdateCardText(product)
+		if err != nil {
+			color.Redln(err)
+			SendError(bot, session, "changeItem", err)
+			return
 		}
 
-	} else if session.User.SettingStep == "uploadPhoto" {
+		inlineKeyboard := messages.GetKeyboard("back", session, "changeItem")
+		messageText := "Текст товара успешно изменен"
+		botMessageID := messages.SendMessage(bot, session.User.UserID, messageText, inlineKeyboard)
+		session.LastBotMessageID = botMessageID
 
-	} else {
+	default:
 		inlineKeyboard := messages.GetKeyboard(update.Message.Text, session, nil)
 		messageText := "Ошибка команды"
 		botMessageID := messages.SendMessage(bot, session.User.UserID, messageText, inlineKeyboard)
 		session.LastBotMessageID = botMessageID
 	}
+
 }
