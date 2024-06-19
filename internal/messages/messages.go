@@ -43,17 +43,6 @@ func SendReplyKeyboard(bot *tgbotapi.BotAPI, userID int, text string, keyboard t
 	return sentMsg.MessageID
 }
 
-func EditMessage(bot *tgbotapi.BotAPI, userID int, messageID int, text string) int {
-	msg := tgbotapi.NewEditMessageText(int64(userID), messageID, "Новый текст")
-	sentMsg, err := bot.Send(msg)
-	if err != nil {
-		color.Redln("Ошибка отправки сообщения: %s\n", err)
-		return 0
-	}
-	color.Greenln("Keyboard is fetched")
-	return sentMsg.MessageID
-}
-
 // func SendMessageWithPhoto(bot *tgbotapi.BotAPI, userID int, text string, keyboard interface{}, imageName string) int {
 // 	cfg, err := config.LoadConfig()
 // 	if err != nil {
@@ -133,51 +122,6 @@ func SendMessageWithPhotoMinIO(bot *tgbotapi.BotAPI, userID int, text string, ke
 	return sentMsg.MessageID, nil
 }
 
-// func SendMessageWithPhotos(bot *tgbotapi.BotAPI, userID int, text string, keyboard interface{}, imageNames []string) int {
-// 	cfg, err := config.LoadConfig()
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	color.Redln("imageNames LEN", len(imageNames))
-// 	files := make(map[string]tgbotapi.RequestFileData)
-// 	mediaGroup := make([]interface{}, len(imageNames))
-// 	for i, imageName := range imageNames {
-// 		color.Redln("imageName", imageName)
-// 		path := cfg.ImagesUrl + "\\" + imageName + ".jpg"
-// 		color.Redln(path)
-
-// 		file, err := os.Open(path)
-// 		if err != nil {
-// 			fmt.Println("Error to upload file")
-// 		}
-// 		defer file.Close()
-
-// 		photo := tgbotapi.NewInputMediaPhoto(path)
-
-// 		if i == 0 {
-// 			photo.Caption = text
-// 		}
-
-// 		mediaGroup[i] = photo
-// 	}
-// 	mediaGroupConfig := tgbotapi.NewMediaGroup(int64(userID), mediaGroup)
-
-// 	if keyboard != nil {
-// 		switch k := keyboard.(type) {
-// 		case tgbotapi.InlineKeyboardMarkup:
-// 			mediaGroupConfig.ReplyMarkup = k
-// 		case tgbotapi.ReplyKeyboardMarkup:
-// 			mediaGroupConfig.ReplyMarkup = k
-// 		}
-// 	}
-// 	sentMsg, err := bot.Send(mediaGroupConfig)
-// 	if err != nil {
-// 		color.Redln("Ошибка отправки сообщения:", err)
-// 		return 0
-// 	}
-// 	return sentMsg.MessageID
-// }
-
 func DeleteMessage(bot *tgbotapi.BotAPI, messageID int, userID int) {
 	deleteConfig := tgbotapi.NewDeleteMessage(int64(userID), messageID)
 	if _, err := bot.Send(deleteConfig); err != nil {
@@ -206,7 +150,7 @@ func GetKeyboard(value string, session *sessions.Session, back interface{}) tgbo
 			),
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("🍽️ Посуда для еды", "dishware"),
-				tgbotapi.NewInlineKeyboardButtonData("🔍 Показать все", "showAllItems"),
+				// tgbotapi.NewInlineKeyboardButtonData("🔍 Показать все", "showAllItems"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("🛒 Перейти в корзину", "Корзина"),
@@ -234,7 +178,7 @@ func GetKeyboard(value string, session *sessions.Session, back interface{}) tgbo
 				tgbotapi.NewInlineKeyboardButtonData("✏️ Изменить корзину ", "changeCart"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("📦 Оформить заказ ", "Checkout"),
+				tgbotapi.NewInlineKeyboardButtonData("📦 Оформить заказ ", "placeOrder"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("🛍️ Перейти в магазин", "Магазин"),
@@ -252,10 +196,7 @@ func GetKeyboard(value string, session *sessions.Session, back interface{}) tgbo
 
 		if quantity != "0" {
 			return tgbotapi.NewInlineKeyboardMarkup(
-				tgbotapi.NewInlineKeyboardRow(
-					tgbotapi.NewInlineKeyboardButtonData("⏪", "prev"),
-					tgbotapi.NewInlineKeyboardButtonData("⏩", "next"),
-				),
+				getScrollButtons(session),
 				tgbotapi.NewInlineKeyboardRow(
 					tgbotapi.NewInlineKeyboardButtonData("Удалить", "delete"),
 					tgbotapi.NewInlineKeyboardButtonData("➖", "decrement"),
@@ -263,27 +204,24 @@ func GetKeyboard(value string, session *sessions.Session, back interface{}) tgbo
 					tgbotapi.NewInlineKeyboardButtonData("➕", "increment"),
 				),
 				tgbotapi.NewInlineKeyboardRow(
-					tgbotapi.NewInlineKeyboardButtonData("🛍️ Перейти в магазин", "Магазин"),
+					tgbotapi.NewInlineKeyboardButtonData("📝 Вернуться к оформлению", "Корзина"),
 				),
 				tgbotapi.NewInlineKeyboardRow(
-					tgbotapi.NewInlineKeyboardButtonData("📝 Вернуться к оформлению", "Корзина"),
+					tgbotapi.NewInlineKeyboardButtonData("🛍️ Перейти в магазин", "Магазин"),
 				),
 			)
 
 		} else {
 			return tgbotapi.NewInlineKeyboardMarkup(
-				tgbotapi.NewInlineKeyboardRow(
-					tgbotapi.NewInlineKeyboardButtonData("⏪", "prev"),
-					tgbotapi.NewInlineKeyboardButtonData("⏩", "next"),
-				),
+				getScrollButtons(session),
 				tgbotapi.NewInlineKeyboardRow(
 					tgbotapi.NewInlineKeyboardButtonData("🛒 Добавить в корзину", "addToCart"),
 				),
 				tgbotapi.NewInlineKeyboardRow(
-					tgbotapi.NewInlineKeyboardButtonData("🛍️ Перейти в магазин", "Магазин"),
+					tgbotapi.NewInlineKeyboardButtonData("📝 Вернуться к оформлению", "Корзина"),
 				),
 				tgbotapi.NewInlineKeyboardRow(
-					tgbotapi.NewInlineKeyboardButtonData("📝 Вернуться к оформлению", "Корзина"),
+					tgbotapi.NewInlineKeyboardButtonData("🛍️ Перейти в магазин", "Магазин"),
 				),
 			)
 		}
@@ -312,10 +250,7 @@ func GetKeyboard(value string, session *sessions.Session, back interface{}) tgbo
 func GetAdminKeyboard(session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
 	if session.User.SettingStep == "changeItem" {
 		return tgbotapi.NewInlineKeyboardMarkup(
-			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("⏪", "prev"),
-				tgbotapi.NewInlineKeyboardButtonData("⏩", "next"),
-			),
+			getScrollButtons(session),
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("Изменить фото", "сhangePhoto"),
 				tgbotapi.NewInlineKeyboardButtonData("Изменить текст", "сhangeText"),
@@ -346,10 +281,7 @@ func GetAdminKeyboard(session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
 		)
 	} else if session.User.SettingStep == "deleteItems" {
 		return tgbotapi.NewInlineKeyboardMarkup(
-			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("⏪", "prev"),
-				tgbotapi.NewInlineKeyboardButtonData("⏩", "next"),
-			),
+			getScrollButtons(session),
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("Удалить товар", "deleteProduct"),
 			),
@@ -377,10 +309,7 @@ func GetCardKeyboard(session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
 
 	if quantity != "0" {
 		return tgbotapi.NewInlineKeyboardMarkup(
-			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("⏪", "prev"),
-				tgbotapi.NewInlineKeyboardButtonData("⏩", "next"),
-			),
+			getScrollButtons(session),
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("Удалить", "delete"),
 				tgbotapi.NewInlineKeyboardButtonData("➖", "decrement"),
@@ -397,10 +326,7 @@ func GetCardKeyboard(session *sessions.Session) tgbotapi.InlineKeyboardMarkup {
 
 	} else {
 		return tgbotapi.NewInlineKeyboardMarkup(
-			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("⏪", "prev"),
-				tgbotapi.NewInlineKeyboardButtonData("⏩", "next"),
-			),
+			getScrollButtons(session),
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("🛒 Добавить в корзину ", "addToCart"),
 			),
@@ -436,4 +362,72 @@ func DeleteMessages(bot *tgbotapi.BotAPI, session sessions.Session, userId int) 
 		DeleteMessage(bot, session.LastBotMessageID, userId)
 		session.LastBotMessageID = 0
 	}
+}
+
+func getScrollButtons(s *sessions.Session) []tgbotapi.InlineKeyboardButton {
+	// currentCard := s.CardManager.CurrentCard
+	totalCards := s.CardManager.CurrentCard.TotalCards
+	cardNumber := s.CardManager.CurrentCard.CurrentCardNumber
+	isLastCard := cardNumber == totalCards-1
+	isFirstCard := cardNumber == 0
+	isPenultCard := cardNumber+1 == totalCards-1
+
+	//Если первая карточка и общее количество = 3
+	if isFirstCard && totalCards > 2 {
+		return tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("▶️ Вперед", "next"),
+			tgbotapi.NewInlineKeyboardButtonData("⏩ В конец", "toLastItem"),
+		)
+		// Если последняя карточка и общее количество карточек = 3
+	} else if isLastCard && totalCards == 3 {
+		return tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("◀️ Назад", "prev"),
+			tgbotapi.NewInlineKeyboardButtonData("⏪ В начало", "toFirstItem"),
+		)
+		// Если первая карточка и общее количество карточек = 2
+	} else if isFirstCard && totalCards == 2 {
+		return tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("▶️ Вперед", "next"),
+		)
+		//Если последняя карточка и общее количество карточек = 2
+	} else if isLastCard && totalCards == 2 {
+		return tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("◀️ Назад", "prev"),
+		)
+		//Если карточка одна
+	} else if totalCards == 1 {
+		return []tgbotapi.InlineKeyboardButton{}
+		//Если последняя карточка и их больше 3
+	} else if isLastCard && totalCards > 3 {
+		return tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⏪ В начало", "toFirstItem"),
+			tgbotapi.NewInlineKeyboardButtonData("◀️", "prev"),
+		)
+		//Если предпоследняя карточка и она не 2 по счету
+	} else if isPenultCard && cardNumber != 1 {
+		return tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⏪ В начало", "toFirstItem"),
+			tgbotapi.NewInlineKeyboardButtonData("◀️ Назад", "prev"),
+			tgbotapi.NewInlineKeyboardButtonData("▶️ Вперед", "next"),
+		)
+		//Если 2 по счету и не предпоследняя
+	} else if cardNumber == 1 && !isPenultCard {
+		return tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("◀️ Назад", "prev"),
+			tgbotapi.NewInlineKeyboardButtonData("▶️ Вперед", "next"),
+			tgbotapi.NewInlineKeyboardButtonData("⏩ В конец", "toLastItem"),
+		)
+		//Если 2 по счету и общее количество карточек = 3
+	} else if cardNumber == 1 && totalCards > 2 {
+		return tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("◀️ Назад", "prev"),
+			tgbotapi.NewInlineKeyboardButtonData("▶️ Вперед", "next"),
+		)
+	}
+	return tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("⏪ В начало", "toFirstItem"),
+		tgbotapi.NewInlineKeyboardButtonData("◀️ Назад", "prev"),
+		tgbotapi.NewInlineKeyboardButtonData("▶️ Вперед", "next"),
+		tgbotapi.NewInlineKeyboardButtonData("⏩ В конец", "toLastItem"),
+	)
 }

@@ -97,9 +97,6 @@ func handleAdminsAction(bot *tgbotapi.BotAPI, update tgbotapi.Update, session *s
 		color.Blueln("uploadProduct")
 
 		if update.Message.Photo != nil {
-			photos := *update.Message.Photo
-			photoSize := photos[len(photos)-1]
-
 			product, err := logic.ParseProduct(update.Message.Caption)
 			if err != nil {
 				color.Redln(err)
@@ -108,15 +105,24 @@ func handleAdminsAction(bot *tgbotapi.BotAPI, update tgbotapi.Update, session *s
 				return
 			}
 
-			objName, err := UploadPhotos(bot, photoSize)
+			objName, err := uploadToMinIO(bot, update)
 			if err != nil {
 				color.Redln(err)
-				SendError(bot, session, "addItem", err)
-				session.User.SettingStep = ""
-				return
+				session.UpdateSettingStep("")
+				SendError(bot, session, "adminPanel", err)
 			}
 			product.Image = objName
 			color.Redln("imageName:", product.Image)
+
+			// photos := *update.Message.Photo
+			// photoSize := photos[len(photos)-1]
+			// objName, err := UploadPhotos(bot, photoSize)
+			// if err != nil {
+			// 	color.Redln(err)
+			// 	SendError(bot, session, "addItem", err)
+			// 	session.User.SettingStep = ""
+			// 	return
+			// }
 
 			session.UpdateNewProduct(product)
 
@@ -140,19 +146,26 @@ func handleAdminsAction(bot *tgbotapi.BotAPI, update tgbotapi.Update, session *s
 		}
 	case "changePhoto":
 		color.Blueln("changePhoto")
-		if len(*update.Message.Photo) > 1 {
-			photos := *update.Message.Photo
-			photoSize := photos[len(photos)-1]
+		if update.Message.Photo != nil {
+			// photos := *update.Message.Photo
+			// photoSize := photos[len(photos)-1]
 
-			objName, err := UploadPhotos(bot, photoSize)
+			// objName, err := UploadPhotos(bot, photoSize)
+			// if err != nil {
+			// 	color.Redln(err)
+			// 	session.UpdateSettingStep("")
+			// 	SendError(bot, session, "adminPanel", err)
+			// 	return
+			// }
+			// color.Redln("changePhoto, photo is uploaded in minIO:", objName)
+			// color.Redln("imageName:", objName)
+
+			objName, err := uploadToMinIO(bot, update)
 			if err != nil {
 				color.Redln(err)
 				session.UpdateSettingStep("")
 				SendError(bot, session, "adminPanel", err)
-				return
 			}
-			color.Redln("changePhoto, photo is downloaded:", objName)
-			color.Redln("imageName:", objName)
 
 			currentCard := session.CardManager.CurrentCard
 			product := product.Product{
@@ -215,6 +228,7 @@ func handleAdminsAction(bot *tgbotapi.BotAPI, update tgbotapi.Update, session *s
 		messageText := "Текст товара успешно изменен"
 		botMessageID := messages.SendMessage(bot, session.User.UserID, messageText, inlineKeyboard)
 		session.LastBotMessageID = botMessageID
+	case "changePhotoAndText":
 
 	default:
 		inlineKeyboard := messages.GetKeyboard(update.Message.Text, session, nil)
@@ -223,4 +237,17 @@ func handleAdminsAction(bot *tgbotapi.BotAPI, update tgbotapi.Update, session *s
 		session.LastBotMessageID = botMessageID
 	}
 
+}
+
+func uploadToMinIO(bot *tgbotapi.BotAPI, update tgbotapi.Update) (string, error) {
+	photos := *update.Message.Photo
+	photoSize := photos[len(photos)-1]
+
+	objName, err := UploadPhotos(bot, photoSize)
+	if err != nil {
+		return "", err
+	}
+	color.Redln("changePhoto, photo is uploaded in minIO:", objName)
+	color.Redln("imageName:", objName)
+	return objName, err
 }

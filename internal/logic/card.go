@@ -173,6 +173,12 @@ func (cm *CardManager) NextCard() {
 func (cm *CardManager) PrevCard() {
 	cm.CurrentCard.prev()
 }
+func (cm *CardManager) ToLastItem() {
+	cm.CurrentCard.toLastItem()
+}
+func (cm *CardManager) ToFirstItem() {
+	cm.CurrentCard.toFirstItem()
+}
 
 func (cm *CardManager) GetCardText() string {
 	return cm.CurrentCard.getTextTemplate()
@@ -230,8 +236,30 @@ func (c *Card) prev() {
 		c.Price = c.ProductList[c.CurrentCardNumber].GetPrice()
 		c.Image = c.ProductList[c.CurrentCardNumber].GetImage()
 	}
-
 }
+
+func (c *Card) toLastItem() {
+	lastItem := len(c.ProductList) - 1
+	color.Redln(c.ProductList[lastItem])
+	c.CurrentCardNumber = lastItem
+	c.ID = c.ProductList[c.CurrentCardNumber].GetID()
+	c.Type = c.ProductList[c.CurrentCardNumber].GetType()
+	c.Name = c.ProductList[c.CurrentCardNumber].GetName()
+	c.Description = c.ProductList[c.CurrentCardNumber].GetDescription()
+	c.Price = c.ProductList[c.CurrentCardNumber].GetPrice()
+	c.Image = c.ProductList[c.CurrentCardNumber].GetImage()
+}
+
+func (c *Card) toFirstItem() {
+	c.CurrentCardNumber = 0
+	c.ID = c.ProductList[c.CurrentCardNumber].GetID()
+	c.Type = c.ProductList[c.CurrentCardNumber].GetType()
+	c.Name = c.ProductList[c.CurrentCardNumber].GetName()
+	c.Description = c.ProductList[c.CurrentCardNumber].GetDescription()
+	c.Price = c.ProductList[c.CurrentCardNumber].GetPrice()
+	c.Image = c.ProductList[c.CurrentCardNumber].GetImage()
+}
+
 func (c *Card) next() {
 	if c.CurrentCardNumber < c.TotalCards-1 {
 		c.CurrentCardNumber++
